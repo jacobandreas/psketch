@@ -1,0 +1,97 @@
+environment:
+  - boundary
+  - bench
+
+primitives:
+  #  - bone
+  #  - brownmushroom
+  #  - clay
+  #  - claybrick
+  #  - coal
+  #  - sugarcane
+  #  - egg
+  #  - glass
+  #  - iron
+  #  - milk
+  #  - redmushroom
+  #  - string
+  #  - sand
+    - wood
+  #  - wheat
+  #  - stone
+
+recipes:
+  #bed:
+  #  plank: 3
+  #  wool: 3
+  #bowl:
+  #  plank: 3
+  #  _yield: 4
+  #bread:
+  #  wheat: 3
+  #brick:
+  #  claybrick: 4
+  #bucket:
+  #  iron: 3
+  #fence:
+  #  plank: 4
+  #  stick: 2
+  #  _yield: 3
+  #fishingrod:
+  #  stick: 3
+  #  string: 2
+  #furnace:
+  #  stone: 8
+  #glasspane:
+  #  glass: 6
+  #  _yield: 16
+  #irondoor:
+  #  iron: 6
+  #  _yield: 3
+  #ladder:
+  #  stick: 7
+  #  _yield: 3
+  #mushroomstew:
+  #  bowl: 1
+  #  brownmushroom: 1
+  #  redmushroom: 1
+  #paper:
+  #  sugarcane: 3
+  #  _yield: 3
+  plank:
+    wood: 1
+    _yield: 4
+  #sandstone:
+  #  sand: 4
+  #shears:
+  #  iron: 2
+  #stick:
+  #  plank: 2
+  #  _yield: 4
+  #stonestairs:
+  #  stonebrick: 6
+  #  _yield: 4
+  #stonebrick:
+  #  stone: 4
+  #  _yield: 4
+  #sugar:
+  #  sugarcane: 1
+  #torch:
+  #  coal: 1
+  #  stick: 1
+  #  _yield: 4
+  #woodaxe:
+  #  stick: 2
+  #  plank: 3
+  #wooddoor:
+  #  plank: 6
+  #  _yield: 3
+  #woodhoe:
+  #  stick: 2
+  #  plank: 2
+  #woodpickaxe:
+  #  stick: 2
+  #  plank: 3
+  #woodstairs:
+  #  plank: 6
+  #  _yield: 4

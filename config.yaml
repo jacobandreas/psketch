@@ -1,0 +1,11 @@
+recipes: "resources/recipes.yaml"
+world: 
+  name: GridWorld
+  #name: LineWorld
+model: 
+  #name: ReflexModel
+  name: ModularACModel
+  #name: ModularModel
+trainer: 
+  name: CurriculumTrainer
+  hints: "resources/hints.yaml"
