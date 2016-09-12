@@ -99,6 +99,7 @@ class GridWorld(object):
         return GridScenario(grid, init_pos, self)
 
     def visualize(self, transitions):
+        #print [transitions[0].m1] + [t.m2 for t in transitions]
         def _visualize(win):
             curses.start_color()
             for i in range(1, 8):
@@ -126,7 +127,7 @@ class GridWorld(object):
                             elif state.dir == DOWN:
                                 ch1 = "@"
                                 ch2 = "v"
-                            color = curses.color_pair(mstate[1])
+                            color = curses.color_pair(mstate.arg or 0)
                         elif thing == self.cookbook.index["boundary"]:
                             ch1 = ch2 = curses.ACS_BOARD
                             color = curses.color_pair(10 + thing)
@@ -235,6 +236,7 @@ class GridState(object):
         # use actions
         elif action == USE:
             dx, dy = (0, 0)
+            success = False
             for nx, ny in neighbors(self.pos, self.dir):
                 here = self.grid[nx, ny, :]
                 if not self.grid[nx, ny, :].any():
@@ -257,6 +259,7 @@ class GridState(object):
                 if thing in self.world.grabbable_indices:
                     n_inventory[thing] += 1
                     n_grid[nx, ny, thing] = 0
+                    success = True
 
                 elif thing in self.world.workshop_indices:
                     cookbook = self.world.cookbook
@@ -272,6 +275,7 @@ class GridState(object):
                         n_inventory[cookbook.index[output]] += yld
                         for i in ing:
                             n_inventory[cookbook.index[i]] -= inputs[i]
+                        success = True
 
                 break
 

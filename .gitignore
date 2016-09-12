@@ -1,2 +1,5 @@
 *.pyc
 *.log
+*.swp
+*.chk
+*.chk.meta
