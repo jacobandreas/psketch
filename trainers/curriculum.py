@@ -9,9 +9,10 @@ import yaml
 
 N_ITERS = 1000000
 N_UPDATE = 100
-MAX_TIMESTEPS = 30
+MAX_TIMESTEPS = 20
 
 class CurriculumTrainer(object):
+    #@profile
     def __init__(self, config):
         self.cookbook = Cookbook(config.recipes)
         self.action_index = util.Index()
@@ -30,6 +31,7 @@ class CurriculumTrainer(object):
             for action, arg in steps:
                 self.tasks_by_action[action].append((goal, steps))
 
+    #@profile
     def do_rollout(self, model, world, goal, steps):
         goal_name, goal_arg = goal
         scenario = world.sample_scenario_with_goal(goal_arg)
@@ -49,6 +51,7 @@ class CurriculumTrainer(object):
                 state_after = state_before.as_terminal()
             elif action >= world.n_actions:
                 state_after = state_before
+                timer = MAX_TIMESTEPS
                 reward = 0
             else:
                 reward, state_after = state_before.step(action)
@@ -65,6 +68,7 @@ class CurriculumTrainer(object):
 
         return transitions, total_reward, steps
 
+    #@profile
     def train(self, model, world):
         model.prepare(world)
         #model.load()
@@ -97,18 +101,20 @@ class CurriculumTrainer(object):
                         model.experience(transitions)
                         #err = model.train(action, update_critic=False)
                         err = model.train(action)
+                        #err = model.train()
                     total_err += err
 
+                #world.visualize(transitions)
                 print
                 print [t.a for t in transitions]
                 print total_reward / n_rollouts
                 print err / N_UPDATE
                 print
-                min_reward = min(total_reward, total_reward / n_rollouts)
+                min_reward = min(min_reward, total_reward / n_rollouts)
 
             print "MIN REWARD", min_reward
             print
             if min_reward > 0.95:
                 max_steps += 1
-                #model.save()
+                model.save()
                 #exit()

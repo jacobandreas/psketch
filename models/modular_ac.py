@@ -6,13 +6,17 @@ from collections import namedtuple, defaultdict
 import numpy as np
 import tensorflow as tf
 
-N_BATCH = 1000
+N_BATCH = 5000
 
 N_HIDDEN = 256
 N_EMBED = 64
 
+#N_MODULES = 6
+#N_TASKS = 10
 N_MODULES = 4
-N_TASKS = 10
+N_TASKS = 3
+
+STEP_SCALE = 0.1
 
 DISCOUNT = 0.9
 EPS = 0.1
@@ -153,6 +157,7 @@ class ModularACModel(object):
 
         for i_module in range(N_MODULES):
             for i_module_target in list(range(N_MODULES)) + [None]:
+            #for i_module_target in [None]:
                 for i_task in range(N_TASKS):
                     critic = critics[i_task, i_module]
                     critic_target = None if i_module_target is None else critics[i_task, i_module_target]
@@ -183,11 +188,11 @@ class ModularACModel(object):
                 t_feats, t_feats_next, t_action_mask, t_reward)
         ### self.optimizer = trpo.TrustRegionOptimizer(actors, scratch_actors, self.inputs, self.session)
 
-    def init(self, state, hint):
+    def init(self, state, hints):
         self.actions, self.args = zip(*hint)
         self.i_task = self.task_index.index(tuple(hint))
         self.i_subtask = 0
-        self.i_step = 0
+        self.i_step = np.asarray([[0.]])
 
     def save(self):
         self.saver.save(self.session, "modular_ac.chk")
@@ -207,26 +212,27 @@ class ModularACModel(object):
     #def experience(self, episode):
     #    self.experiences += episode
 
+    #@profile
     def act(self, state):
-        self.i_step += 1
+        self.i_step += STEP_SCALE
         actor = self.actors[self.actions[self.i_subtask]]
-        logprobs = self.session.run([actor.t_probs],
-                feed_dict={
-                    self.inputs.t_arg: [self.args[self.i_subtask]],
-                    self.inputs.t_feats: [state.features()],
-                    self.inputs.t_step: [[self.i_step / 10.]]
-                })[0][0, :]
+        feed_dict = {
+            self.inputs.t_arg: [self.args[self.i_subtask]],
+            self.inputs.t_feats: [state.features()],
+            self.inputs.t_step: self.i_step
+        }
+        logprobs = self.session.run([actor.t_probs], feed_dict=feed_dict)[0][0, :]
         probs = np.exp(logprobs)
         action = np.random.choice(self.n_actions, p=probs)
         if action >= self.world.n_actions:
             self.i_subtask += 1
-            self.i_step = 0
+            self.i_step = np.asarray([[0.]])
         terminate = self.i_subtask >= len(self.actions)
         return action, terminate
 
     def get_state(self):
         if self.i_subtask >= len(self.actions):
-            return ModelState(None, None, None, None, 0)
+            return ModelState(None, None, None, None, [[0.]])
         return ModelState(
                 self.actions[self.i_subtask], 
                 self.args[self.i_subtask], 
@@ -287,10 +293,12 @@ class ModularACModel(object):
             s1, m1, a, s2, m2, r = zip(*exps)
             feats1 = [s.features() for s in s1]
             args1 = [m.arg for m in m1]
-            steps1 = [[m.step / 10.] for m in m1]
+            #steps1 = [[m.step / 10.] for m in m1]
+            steps1 = [m.step[0] for m in m1]
             feats2 = [s.features() for s in s2]
             args2 = [m.arg or 0 for m in m2]
-            steps2 = [[m.step / 10.] for m in m2]
+            #steps2 = [[m.step / 10.] for m in m2]
+            steps2 = [m.step[0] for m in m2]
             a_mask = np.zeros((len(exps), self.n_actions))
             for i_datum, aa in enumerate(a):
                 a_mask[i_datum, aa] = 1

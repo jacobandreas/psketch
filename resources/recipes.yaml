@@ -1,14 +1,14 @@
 environment:
   - boundary
   - workshop0
-# - workshop1
-# - workshop2
+  - workshop1
+  - workshop2
 
 primitives:
-  - iron
+  #- iron
   - wood
-  - grass
-  - stone
+  #- grass
+  #- stone
 
 recipes:
   plank:
@@ -16,32 +16,37 @@ recipes:
     _yield: 4
     _at: workshop0
 
-  stick:
-    plank: 2
-    _yield: 4
-    _at: workshop0
+  #stick:
+  #  plank: 2
+  #  _yield: 4
+  #  _at: workshop0
 
-  axe:
-    stick: 2
-    iron: 2
-    _at: workshop0
+  #axe:
+  #  stick: 2
+  #  iron: 2
+  #  _at: workshop0
 
-  bed:
-    plank: 3
-    grass: 3
-    _at: workshop1
+  #bed:
+  #  plank: 4
+  #  grass: 2
+  #  _at: workshop1
 
-  shears:
-    stick: 2
-    iron: 2
-    _at: workshop1
+  #shears:
+  #  stick: 2
+  #  iron: 2
+  #  _at: workshop1
 
-  bridge:
-    stone: 2
-    iron: 2
+  cloth:
+    #grass: 2
+    wood: 2
     _at: workshop2
 
-  ladder:
-    plank: 4
-    stick: 4
-    _at: workshop2
+  #bridge:
+  #  stone: 2
+  #  iron: 2
+  #  _at: workshop2
+
+  #ladder:
+  #  plank: 4
+  #  stick: 2
+  #  _at: workshop2

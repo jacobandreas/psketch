@@ -6,13 +6,13 @@ import numpy as np
 from skimage.measure import block_reduce
 import time
 
-WIDTH = 10
-HEIGHT = 10
+WIDTH = 15
+HEIGHT = 15
 
 WINDOW_WIDTH = 5
 WINDOW_HEIGHT = 5
 
-N_WORKSHOPS = 1
+N_WORKSHOPS = 3
 
 DOWN = 0
 UP = 1
@@ -84,7 +84,7 @@ class GridWorld(object):
         #        (x, y) = random_free(grid)
         #        grid[x, y, self.cookbook.index[ingredient]] = 1
         for primitive in self.cookbook.primitives:
-            for i in range(2):
+            for i in range(10):
                 (x, y) = random_free(grid)
                 grid[x, y, self.cookbook.index[primitive]] = 1
 
@@ -131,14 +131,14 @@ class GridWorld(object):
                         elif thing == self.cookbook.index["boundary"]:
                             ch1 = ch2 = curses.ACS_BOARD
                             color = curses.color_pair(10 + thing)
-                        elif thing == self.cookbook.index["workshop0"]:
-                            ch1 = "W"
-                            ch2 = "0"
-                            color = curses.color_pair(10 + thing)
+                        #elif thing == self.cookbook.index["workshop0"]:
+                        #    ch1 = "W"
+                        #    ch2 = "0"
+                        #    color = curses.color_pair(10 + thing)
                         else:
                             name = self.cookbook.index.get(thing)
                             ch1 = name[0]
-                            ch2 = name[1]
+                            ch2 = name[-1]
                             color = curses.color_pair(10 + thing)
 
                         win.addch(HEIGHT-y, x*2, ch1, color)
@@ -257,7 +257,7 @@ class GridState(object):
                 n_grid = self.grid.copy()
 
                 if thing in self.world.grabbable_indices:
-                    n_inventory[thing] += 1
+                    n_inventory[thing] += 2
                     n_grid[nx, ny, thing] = 0
                     success = True
 
