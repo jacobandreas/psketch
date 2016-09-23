@@ -3,3 +3,5 @@
 *.swp
 *.chk
 *.chk.meta
+checkpoint
+*.lprof

@@ -6,8 +6,8 @@ import numpy as np
 from skimage.measure import block_reduce
 import time
 
-WIDTH = 15
-HEIGHT = 15
+WIDTH = 12
+HEIGHT = 12
 
 WINDOW_WIDTH = 5
 WINDOW_HEIGHT = 5
@@ -84,7 +84,7 @@ class GridWorld(object):
         #        (x, y) = random_free(grid)
         #        grid[x, y, self.cookbook.index[ingredient]] = 1
         for primitive in self.cookbook.primitives:
-            for i in range(10):
+            for i in range(5):
                 (x, y) = random_free(grid)
                 grid[x, y, self.cookbook.index[primitive]] = 1
 
