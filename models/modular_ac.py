@@ -6,16 +6,17 @@ from collections import namedtuple, defaultdict
 import numpy as np
 import tensorflow as tf
 
-#N_UPDATE = 20000
-#N_BATCH = 5000
-N_UPDATE = 1000
-N_BATCH = 1000
+N_UPDATE = 10000
+N_BATCH = 5000
+#N_UPDATE = 100
+#N_BATCH = 100
 
 N_HIDDEN = 256
 N_EMBED = 64
 
 #N_MODULES = 6
 #N_TASKS = 10
+#N_MODULES = 6
 N_MODULES = 4
 N_TASKS = 3
 
@@ -48,11 +49,14 @@ class ModularACModel(object):
         self.experiences = []
         self.world = None
         self.task_index = util.Index()
+        tf.set_random_seed(0)
+        self.next_actor_seed = 0
 
     def prepare(self, world):
         assert self.world is None
         self.world = world
-        self.n_actions = world.n_actions + 1
+        #self.n_actions = world.n_actions + 1
+        self.n_actions = world.n_actions
         self.t_n_steps = tf.Variable(1., name="n_steps")
         self.t_inc_steps = self.t_n_steps.assign(self.t_n_steps + 1)
         self.optimizer = tf.train.RMSPropOptimizer(0.001)
@@ -189,12 +193,23 @@ class ModularACModel(object):
                 t_feats, t_feats_next, t_action_mask, t_reward)
         ### self.optimizer = trpo.TrustRegionOptimizer(actors, scratch_actors, self.inputs, self.session)
 
-    def init(self, states, hint):
+    def init(self, states, hints):
         n_act_batch = len(states)
-        self.actions, self.args = zip(*hint)
-        self.i_task = [self.task_index.index(tuple(hint)) for _ in range(n_act_batch)]
+        #self.actions, self.args = zip(*hint)
+        self.actions = []
+        self.args = []
+        self.i_task = []
+        for i in range(n_act_batch):
+            actions, args = zip(*hints[i])
+            self.actions.append(actions)
+            self.args.append(args)
+            self.i_task.append(self.task_index.index(tuple(hints[i])))
         self.i_subtask = [0 for _ in range(n_act_batch)]
         self.i_step = np.zeros((n_act_batch, 1))
+        self.randoms = []
+        for _ in range(n_act_batch):
+            self.randoms.append(np.random.RandomState(self.next_actor_seed))
+            self.next_actor_seed += 1
 
     def save(self):
         self.saver.save(self.session, "modular_ac.chk")
@@ -209,7 +224,13 @@ class ModularACModel(object):
         running_reward = 0
         for transition in episode[::-1]:
             running_reward = running_reward * DISCOUNT + transition.r
-            self.experiences.append(transition._replace(r = running_reward))
+            #if transition.a < self.world.n_actions:
+            #    running_reward = running_reward * DISCOUNT + transition.r
+            #elif transition.a < self.n_actions:
+            #    running_reward = running_reward * DISCOUNT - 10
+            n_transition = transition._replace(r=running_reward)
+            if n_transition.a < self.n_actions:
+                self.experiences.append(n_transition)
 
     #def experience(self, episode):
     #    self.experiences += episode
@@ -221,28 +242,36 @@ class ModularACModel(object):
         n_act_batch = len(self.i_subtask)
 
         for i in range(n_act_batch):
-            by_mod[self.i_subtask[i]].append(i)
+            by_mod[self.i_task[i], self.i_subtask[i]].append(i)
 
         action = [None] * n_act_batch
         terminate = [None] * n_act_batch
 
-        for i_subtask, indices in by_mod.items():
-            if i_subtask >= len(self.actions):
+        for k, indices in by_mod.items():
+            i_task, i_subtask = k
+            assert len(set(self.actions[i] for i in indices)) == 1
+            if i_subtask >= len(self.actions[indices[0]]):
                 continue
-            actor = self.actors[self.actions[i_subtask]]
+            actor = self.actors[self.actions[indices[0]][i_subtask]]
             feed_dict = {
-                self.inputs.t_arg: [self.args[i_subtask] for _ in indices],
+                self.inputs.t_arg: [self.args[i][i_subtask] for i in indices],
                 self.inputs.t_feats: [states[i].features() for i in indices],
                 self.inputs.t_step: [self.i_step[i] for i in indices]
             }
             logprobs = self.session.run([actor.t_probs], feed_dict=feed_dict)[0]
             probs = np.exp(logprobs)
             for pr, i in zip(probs, indices):
-                a = np.random.choice(self.n_actions, p=pr)
-                if a >= self.world.n_actions:
+
+                #a = self.randoms[i].choice(self.n_actions, p=pr)
+                if self.i_step[i] >= .9999:
+                    a = self.n_actions
+                else:
+                    a = self.randoms[i].choice(self.n_actions, p=pr)
+
+                if a == self.n_actions:
                     self.i_subtask[i] += 1
                     self.i_step[i] = 0.
-                t = self.i_subtask[i] >= len(self.actions)
+                t = self.i_subtask[i] >= len(self.actions[indices[0]])
                 action[i] = a
                 terminate[i] = t
 
@@ -268,15 +297,15 @@ class ModularACModel(object):
     def get_state(self):
         out = []
         for i in range(len(self.i_subtask)):
-            if self.i_subtask[i] >= len(self.actions):
+            if self.i_subtask[i] >= len(self.actions[i]):
                 out.append(ModelState(None, None, None, None, [0.]))
             else:
                 out.append(ModelState(
-                        self.actions[self.i_subtask[i]], 
-                        self.args[self.i_subtask[i]], 
+                        self.actions[i][self.i_subtask[i]], 
+                        self.args[i][self.i_subtask[i]], 
                         len(self.args) - self.i_subtask[i],
                         self.i_task[i],
-                        self.i_step[i]))
+                        self.i_step[i].copy()))
         return out
 
     def train(self, action=None, update_actor=True, update_critic=True):
@@ -290,6 +319,16 @@ class ModularACModel(object):
         #batch = [self.experiences[i] for i in batch_indices]
         #self.experiences = self.experiences[-MAX_EXPERIENCES:]
         batch = experiences[:N_UPDATE]
+
+        #print hash(tuple(t.a for t in batch))
+        #print hash(tuple(t.m1.arg for t in batch))
+        #print hash(tuple(t.m2.arg for t in batch))
+        ##print [t.m1.task for t in batch]
+        #print hash(tuple(tuple(t.m1.step) for t in batch))
+        #print hash(tuple(tuple(t.m2.step) for t in batch))
+        #print hash(tuple(t.r for t in batch))
+        #exit()
+
         #print len(batch)
         #_, _, a, _, _, r = zip(*batch)
         #print np.mean(r)
@@ -308,6 +347,8 @@ class ModularACModel(object):
         for e in batch:
             by_mod[e.m1.task, e.m1.action, e.m2.action].append(e)
             #by_mod[0, e.m1[0], e.m1[0]].append(e)
+
+        #print {k: len(v) for k, v in by_mod.items()}
 
         #for k in by_mod:
         #    print k, len(by_mod[k])
@@ -361,6 +402,24 @@ class ModularACModel(object):
                 critic_grad, critic_err = self.session.run([critic_trainer.t_grad, critic_trainer.t_loss], 
                         feed_dict=feed_dict)
 
+                #print args1
+                #print steps1
+                #print args2
+                #print steps2
+                #print hash(tuple(a))
+                #print hash(tuple(r))
+
+                #print i_batch, i_task, i_mod1, i_mod2
+                #print actor_err
+                #print critic_err
+                #print len(exps)
+                #print len(all_exps)
+                #exit()
+
+                #print actor_err
+                #print critic_err
+                #exit()
+
                 total_actor_err += actor_err
                 total_critic_err += critic_err
 
@@ -372,6 +431,10 @@ class ModularACModel(object):
                     for param, grad in zip(critic.params, critic_grad):
                         increment_sparse_or_dense(grads[param.name], grad)
                         touched.add(param.name)
+
+        #print total_actor_err
+        #print total_critic_err
+        #exit()
 
         global_norm = 0
         for k in params:

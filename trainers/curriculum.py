@@ -31,16 +31,25 @@ class CurriculumTrainer(object):
             for action, arg in steps:
                 self.tasks_by_action[action].append((goal, steps))
 
-    #@profile
-    def do_rollout(self, model, world, goal, steps):
-        goal_name, goal_arg = goal
+        self.random = np.random.RandomState(0)
 
-        n_batch = 1
+    #@profile
+    def do_rollout(self, model, world, possible_tasks):
+
+        n_batch = 100
 
         states_before = []
+        steps = []
+        goal_args = []
         for _ in range(n_batch):
+            goal, st = possible_tasks[self.random.choice(len(possible_tasks))]
+            goal_name, goal_arg = goal
             scenario = world.sample_scenario_with_goal(goal_arg)
             states_before.append(scenario.init())
+            steps.append(st)
+            goal_args.append(goal_arg)
+        #for state in states_before:
+        #    print state.grid.sum(axis=2).sum(axis=1)
 
         model.init(states_before, steps)
         transitions = [[] for _ in range(n_batch)]
@@ -54,13 +63,14 @@ class CurriculumTrainer(object):
         while not all(done) and timer > 0:
             mstates_before = model.get_state()
             action, terminate = model.act(states_before)
+            #print action
             mstates_after = model.get_state()
             states_after = [None for _ in range(n_batch)]
             for i in range(n_batch):
                 if action[i] is None:
                     assert done[i]
                 elif terminate[i]:
-                    win = states_before[i].inventory[self.cookbook.index[goal_arg]] > 0
+                    win = states_before[i].inventory[self.cookbook.index[goal_args[i]]] > 0
                     reward = 1 if win else 0
                     states_after[i] = states_before[i].as_terminal()
                 elif action[i] >= world.n_actions:
@@ -86,7 +96,8 @@ class CurriculumTrainer(object):
             states_before = states_after
             timer -= 1
 
-        #world.visualize(transitions)
+        #print [t.a for t in transitions[0]]
+        #world.visualize(transitions[0])
         #assert not any(len(t) == 0 for t in transitions)
         return transitions, total_reward / n_batch, steps
 
@@ -115,15 +126,18 @@ class CurriculumTrainer(object):
                 total_err = 0.
                 n_rollouts = 0.
                 count = 0
+                by_task = defaultdict(lambda: 0)
                 for j in range(N_UPDATE):
-                    counter = defaultdict(lambda: 0)
+                    #counter = defaultdict(lambda: 0)
                     err = None
                     while err is None:
-                        goal, steps = possible_tasks[np.random.choice(len(possible_tasks))]
-                        transitions, reward, steps = self.do_rollout(model, world, goal, steps)
+                    #for _ in range(2):
+                        #goal, steps = possible_tasks[self.random.choice(len(possible_tasks))]
+                        transitions, reward, steps = self.do_rollout(model, world, possible_tasks) #, goal, steps)
                         for t in transitions:
                             for tt in t:
-                                counter[tt.a] += 1
+                                if tt.r > 0:
+                                    by_task[tt.m1.task] += 1
                         total_reward += reward
                         n_rollouts += 1
                         for t in transitions:
@@ -139,9 +153,11 @@ class CurriculumTrainer(object):
 
                 #world.visualize(transitions)
                 print
+                print action
                 print [t.a for t in transitions[-1]]
                 print total_reward / n_rollouts
                 print err / N_UPDATE
+                print dict(by_task)
                 print count
                 print
                 min_reward = min(min_reward, total_reward / n_rollouts)

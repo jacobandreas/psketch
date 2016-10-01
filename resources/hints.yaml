@@ -9,10 +9,12 @@
 
 "make[plank]":
   ["get[wood]", "make0[plank]"]
+  #["make0[plank]", "make0[plank]"]
 
 "make[cloth]":
   #["get[grass]", "make2[cloth]"]
   ["get[wood]", "make2[cloth]"]
+  #["make0[cloth]", "make0[cloth]"]
 
 #"make[stick]":
 #  ["get[wood]", "make0[plank]", "make0[stick]"]

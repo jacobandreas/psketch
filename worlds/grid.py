@@ -8,6 +8,8 @@ import time
 
 WIDTH = 12
 HEIGHT = 12
+#WIDTH = 7
+#HEIGHT = 7
 
 WINDOW_WIDTH = 5
 WINDOW_HEIGHT = 5
@@ -21,10 +23,10 @@ RIGHT = 3
 USE = 4
 N_ACTIONS = USE + 1
 
-def random_free(grid):
+def random_free(grid, random):
     pos = None
     while pos is None:
-        (x, y) = (np.random.randint(WIDTH), np.random.randint(HEIGHT))
+        (x, y) = (random.randint(WIDTH), random.randint(HEIGHT))
         if grid[x, y, :].any():
             continue
         pos = (x, y)
@@ -60,6 +62,8 @@ class GridWorld(object):
         self.workshop_indices = [self.cookbook.index["workshop%d" % i]
                 for i in range(N_WORKSHOPS)]
 
+        self.random = np.random.RandomState(0)
+
     def sample_scenario_with_goal(self, goal):
         assert goal not in self.cookbook.environment
         if goal in self.cookbook.primitives:
@@ -85,16 +89,16 @@ class GridWorld(object):
         #        grid[x, y, self.cookbook.index[ingredient]] = 1
         for primitive in self.cookbook.primitives:
             for i in range(5):
-                (x, y) = random_free(grid)
+                (x, y) = random_free(grid, self.random)
                 grid[x, y, self.cookbook.index[primitive]] = 1
 
         # generate crafting stations
         for i_ws in range(N_WORKSHOPS):
-            ws_x, ws_y = random_free(grid)
+            ws_x, ws_y = random_free(grid, self.random)
             grid[ws_x, ws_y, self.cookbook.index["workshop%d" % i_ws]] = 1
 
         # generate init pos
-        init_pos = random_free(grid)
+        init_pos = random_free(grid, self.random)
 
         return GridScenario(grid, init_pos, self)
 
