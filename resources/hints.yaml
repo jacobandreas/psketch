@@ -1,32 +1,32 @@
 #"get[iron]":
-#  ["get[iron]"]
+#  ["get_iron[iron]"]
 
 #"get[wood]":
-#  ["get[wood]"]
+#  ["get_wood[wood]"]
 
 #"get[grass]":
-#  ["get[grass]"]
+#  ["get_grass[grass]"]
 
 "make[plank]":
-  ["get[wood]", "make0[plank]"]
-  #["make0[plank]", "make0[plank]"]
+  ["get_wood[wood]", "make0[plank]"]
+
+"make[stick]":
+  ["get_wood[wood]", "make1[stick]"]
 
 "make[cloth]":
-  #["get[grass]", "make2[cloth]"]
-  ["get[wood]", "make2[cloth]"]
-  #["make0[cloth]", "make0[cloth]"]
+  ["get_grass[grass]", "make2[cloth]"]
 
-#"make[stick]":
-#  ["get[wood]", "make0[plank]", "make0[stick]"]
-#
-#"make[axe]":
-#  ["get[wood]", "make0[plank]", "get[iron]", "make0[axe]"]
-#
-#"make[bed]":
-#  ["get[wood]", "get[grass]", "make0[plank]", "make1[bed]"]
+"make[rope]":
+  ["get_grass[grass]", "make0[rope]"]
 
-#"make[shears]":
-#  ["get[wood]", "make[plank]", "make[stick]", "get[iron]", "make[shears]"]
-#
-#"make[bridge]":
-#  ["get[stone]", "get[stone]", "get[iron]", "get[iron]", "make[bridge]"]
+"make[bridge]":
+  ["get_iron[iron]", "get_wood[wood]", "make2[bridge]"]
+
+"make[bed]":
+  ["get_wood[wood]", "get_grass[grass]", "make0[plank]", "make1[bed]"]
+
+"make[axe]":
+  ["get_wood[wood]", "make1[stick]", "get_iron[iron]", "make0[axe]"]
+
+"make[shears]":
+  ["get_wood[wood]", "make1[stick]", "get_iron[iron]", "make1[shears]"]

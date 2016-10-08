@@ -9,7 +9,9 @@ import yaml
 
 N_ITERS = 1000000
 N_UPDATE = 100
-MAX_TIMESTEPS = 20
+MAX_TIMESTEPS = 75
+IMPROVEMENT_THRESHOLD = 0.8
+#IMPROVEMENT_THRESHOLD = 0.5
 
 class CurriculumTrainer(object):
     #@profile
@@ -34,7 +36,7 @@ class CurriculumTrainer(object):
         self.random = np.random.RandomState(0)
 
     #@profile
-    def do_rollout(self, model, world, possible_tasks):
+    def do_rollout(self, model, world, possible_tasks, task_probs):
 
         n_batch = 100
 
@@ -42,7 +44,8 @@ class CurriculumTrainer(object):
         steps = []
         goal_args = []
         for _ in range(n_batch):
-            goal, st = possible_tasks[self.random.choice(len(possible_tasks))]
+            goal, st = possible_tasks[self.random.choice(
+                len(possible_tasks), p=task_probs)]
             goal_name, goal_arg = goal
             scenario = world.sample_scenario_with_goal(goal_arg)
             states_before.append(scenario.init())
@@ -104,40 +107,48 @@ class CurriculumTrainer(object):
     #@profile
     def train(self, model, world):
         model.prepare(world)
-        #model.load()
+        model.load()
         #actions = itertools.cycle(self.tasks_by_action.keys())
         actions = self.tasks_by_action.keys()
         #actions = [2]
         max_steps = 1
 
+        task_probs = []
         while True:
         #for _ in range(1):
             print "MAX_STEPS", max_steps
             min_reward = np.inf
-            for action in actions:
-            ### for _ in range(1):
-                possible_tasks = self.tasks_by_action[action]
-                #possible_tasks = self.tasks
+            #for action in actions:
+            #for action in [1]:
+            for _ in range(1):
+                possible_tasks = self.tasks
+                ### possible_tasks = self.tasks_by_action[action]
                 possible_tasks = [t for t in possible_tasks if len(t[1]) <= max_steps]
                 if len(possible_tasks) == 0:
                     continue
+
+                if len(task_probs) != len(possible_tasks):
+                    task_probs = np.ones(len(possible_tasks)) / len(possible_tasks)
 
                 total_reward = 0.
                 total_err = 0.
                 n_rollouts = 0.
                 count = 0
                 by_task = defaultdict(lambda: 0)
+                all_by_task = defaultdict(lambda: 0)
                 for j in range(N_UPDATE):
                     #counter = defaultdict(lambda: 0)
                     err = None
                     while err is None:
                     #for _ in range(2):
                         #goal, steps = possible_tasks[self.random.choice(len(possible_tasks))]
-                        transitions, reward, steps = self.do_rollout(model, world, possible_tasks) #, goal, steps)
+                        transitions, reward, steps = self.do_rollout(model,
+                                world, possible_tasks, task_probs) #, goal, steps)
                         for t in transitions:
-                            for tt in t:
-                                if tt.r > 0:
-                                    by_task[tt.m1.task] += 1
+                            tt = t[-1]
+                            all_by_task[tt.m1.task] += 1
+                            if tt.r > 0:
+                                by_task[tt.m1.task] += 1
                         total_reward += reward
                         n_rollouts += 1
                         for t in transitions:
@@ -145,26 +156,43 @@ class CurriculumTrainer(object):
                             model.experience(t)
                         #print
                         #err = model.train(action, update_critic=False)
-                        err = model.train(action)
+                        #err = model.train(action)
+                        err = model.train()
                         count += 1
                         #err = model.train()
                     total_err += err
                     #print ">>", counter
 
-                #world.visualize(transitions)
+                task_probs = np.zeros(len(possible_tasks))
+                for i, task in enumerate(possible_tasks):
+                    i_task = model.task_index[tuple(task[1])]
+                    task_probs[i] = 1. * by_task[i_task] / all_by_task[i_task]
+                task_probs = 1 - task_probs
+                task_probs += 0.01
+                task_probs /= task_probs.sum()
+
+                #world.visualize(transitions[-1])
                 print
-                print action
+                print [p[0] for p in  possible_tasks]
+                print task_probs
+                print
+                ### print action
                 print [t.a for t in transitions[-1]]
                 print total_reward / n_rollouts
                 print err / N_UPDATE
-                print dict(by_task)
+                score_dict = {model.task_index.get(k): 1. * by_task[k] / all_by_task[k] for k in by_task}
+                print score_dict
+                #print dict(by_task)
+                #print dict(all_by_task)
                 print count
                 print
-                min_reward = min(min_reward, total_reward / n_rollouts)
+                #min_reward = min(min_reward, total_reward / n_rollouts)
+                min_reward = min(min_reward, min(score_dict.values()))
 
             print "MIN REWARD", min_reward
             print
-            if min_reward > 0.95:
+            #if min_reward > 0.90:
+            if min_reward > IMPROVEMENT_THRESHOLD:
                 max_steps += 1
-                model.save()
+                #model.save()
                 #exit()

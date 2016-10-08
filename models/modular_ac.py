@@ -8,17 +8,20 @@ import tensorflow as tf
 
 N_UPDATE = 10000
 N_BATCH = 5000
+#N_UPDATE = 1000
+#N_BATCH = 1000
+
 #N_UPDATE = 100
 #N_BATCH = 100
 
-N_HIDDEN = 256
+N_HIDDEN = 128
 N_EMBED = 64
 
 #N_MODULES = 6
 #N_TASKS = 10
 #N_MODULES = 6
-N_MODULES = 4
-N_TASKS = 3
+N_MODULES = 8
+N_TASKS = 9
 
 DISCOUNT = 0.9
 EPS = 0.1
@@ -62,9 +65,11 @@ class ModularACModel(object):
         self.optimizer = tf.train.RMSPropOptimizer(0.001)
         #self.optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
 
-        def build_actor(index, t_input, t_action_mask, extra_params=()):
+        def build_actor(index, t_input, t_action_mask, extra_params=[]):
             with tf.variable_scope("actor_%s" % index):
                 t_action_score, v_action = net.mlp(t_input, (N_HIDDEN, self.n_actions))
+                #t_action_score, v_action = net.mlp(t_input, (self.n_actions,))
+                #t_action_score, v_action = net.mlp(t_input, (self.n_actions,))
                 #t_w_action_score = t_action_score / (1000 / self.t_n_steps + 1)
                 #t_w_action_score = t_action_score * 0.1
                 t_w_action_score = t_action_score
@@ -73,14 +78,18 @@ class ModularACModel(object):
                         t_action_mask * t_action_logprobs, reduction_indices=(1,))
             return ActorModule(t_action_logprobs, t_chosen_prob, v_action + extra_params)
 
-        def build_critic(index, t_input, t_input_next, t_reward, extra_params=(),
-                extra_params_target=()):
+        def build_critic(index, t_input, t_input_next, t_reward, extra_params=[],
+                extra_params_target=[]):
             with tf.variable_scope("critic_%s_target" % index):
-                t_value_target, v_value_target = net.mlp(t_input_next, (N_HIDDEN, 1))
+                #t_value_target, v_value_target = net.mlp(t_input_next, (N_HIDDEN, 1))
+                t_value_target, v_value_target = net.mlp(t_input_next, (1,))
                 t_value_target = tf.squeeze(t_value_target)
             with tf.variable_scope("critic_%s" % index):
-                t_value, v_value = net.mlp(t_input, (N_HIDDEN, 1))
+                #t_value, v_value = net.mlp(t_input, (N_HIDDEN, 1))
+
+                t_value, v_value = net.mlp(t_input, (1,))
                 t_value = tf.squeeze(t_value)
+
                 #t_advantage = t_reward + DISCOUNT * t_value_target - t_value
                 t_advantage = None
             t_assign_ops = [v_target.assign(v) for v, v_target 
@@ -88,30 +97,41 @@ class ModularACModel(object):
             return CriticModule(t_value, t_value_target, t_advantage, v_value + extra_params,
                     v_value_target + extra_params_target, t_assign_ops)
 
-        def build_actor_trainer(actor, t_reward, critic, critic_target):
+        ### def build_actor_trainer(actor, t_reward, critic, critic_target):
+        def build_actor_trainer(actor, t_reward, critic):
             #if critic_target is None:
             #    t_advantage = t_reward - critic.t_value
             #else:
             #    t_advantage = t_reward + DISCOUNT * critic_target.t_value - critic.t_value
             t_advantage = t_reward - critic.t_value
-            actor_loss = -tf.reduce_sum(actor.t_chosen_prob * t_advantage)
+            actor_loss = -tf.reduce_sum(actor.t_chosen_prob * t_advantage) + \
+                    0.001 * tf.reduce_sum(tf.exp(actor.t_probs) * actor.t_probs)
             #actor_loss = tf.reduce_sum(0 * actor.t_chosen_prob + 1)
             actor_grad = tf.gradients(actor_loss, actor.params)
             actor_trainer = Trainer(actor_loss, actor_grad, self.optimizer.minimize(actor_loss, 
                     var_list=actor.params), None)
             return actor_trainer
 
-        def build_critic_trainer(t_reward, critic, critic_target):
-            #if critic_target is None:
-            #    t_advantage = t_reward - critic.t_value
-            #else:
-            #    t_advantage = t_reward + DISCOUNT * critic_target.t_value - critic.t_value
+        ### def build_critic_trainer(t_reward, critic, critic_target):
+        ###     #if critic_target is None:
+        ###     #    t_advantage = t_reward - critic.t_value
+        ###     #else:
+        ###     #    t_advantage = t_reward + DISCOUNT * critic_target.t_value - critic.t_value
+        ###     t_advantage = t_reward - critic.t_value
+        ###     critic_loss = tf.reduce_sum(tf.square(t_advantage))
+        ###     #critic_loss = tf.reduce_sum(0 * t_advantage + 1)
+        ###     critic_grad = tf.gradients(critic_loss, critic.params)
+        ###     critic_trainer = Trainer(critic_loss, critic_grad, self.optimizer.minimize(critic_loss, 
+        ###             var_list=critic.params), None)
+        ###     return critic_trainer
+
+        def build_critic_trainer(t_reward, critic):
             t_advantage = t_reward - critic.t_value
             critic_loss = tf.reduce_sum(tf.square(t_advantage))
-            #critic_loss = tf.reduce_sum(0 * t_advantage + 1)
             critic_grad = tf.gradients(critic_loss, critic.params)
-            critic_trainer = Trainer(critic_loss, critic_grad, self.optimizer.minimize(critic_loss, 
-                    var_list=critic.params), None)
+            critic_trainer = Trainer(critic_loss, critic_grad,
+                    self.optimizer.minimize(critic_loss,
+                        var_list=critic.params), None)
             return critic_trainer
 
         # placeholders
@@ -125,13 +145,25 @@ class ModularACModel(object):
         t_reward = tf.placeholder(tf.float32, shape=(None,))
 
         # input representation
-        with tf.variable_scope("embed"):
-            t_embed_arg, v_embed_arg = net.embed(t_arg, self.world.cookbook.n_kinds, N_EMBED)
-        with tf.variable_scope("embed_next"):
-            t_embed_arg_next, v_embed_arg_next = net.embed(t_arg, self.world.cookbook.n_kinds, N_EMBED)
-        t_assign_embed_ops = [v_target.assign(v) for v, v_target in zip(v_embed_arg, v_embed_arg_next)]
-        t_input = tf.concat(1, (t_embed_arg, t_feats, t_step))
-        t_input_next = tf.concat(1, (t_embed_arg_next, t_feats_next, t_step_next))
+        #with tf.variable_scope("embed"):
+        #    t_embed_arg, v_embed_arg = net.embed(t_arg, self.world.cookbook.n_kinds, N_EMBED)
+        #with tf.variable_scope("embed_next"):
+        #    t_embed_arg_next, v_embed_arg_next = net.embed(t_arg, self.world.cookbook.n_kinds, N_EMBED)
+        #t_assign_embed_ops = [v_target.assign(v) for v, v_target in zip(v_embed_arg, v_embed_arg_next)]
+        #t_input = tf.concat(1, (t_embed_arg, t_feats, t_step))
+        #t_input_next = tf.concat(1, (t_embed_arg_next, t_feats_next, t_step_next))
+        t_input = t_feats
+        t_input_next = t_feats_next
+        extra_params = extra_params_target = []
+
+        #with tf.variable_scope("input"):
+        #    t_input, v_input = net.mlp(t_feats, [N_HIDDEN])
+        #    t_input = tf.nn.relu(t_input)
+        #with tf.variable_scope("input_next"):
+        #    t_input_next, v_input_next = net.mlp(t_feats_next, [N_HIDDEN])
+        #    t_input_next = tf.nn.relu(t_input_next)
+        #extra_params = v_input
+        #extra_params_target = v_input_next
 
         # modules
         ### actors = {}
@@ -148,30 +180,41 @@ class ModularACModel(object):
         critic_trainers = {}
 
         for i_module in range(N_MODULES):
-            actor = build_actor(i_module, t_input, t_action_mask, extra_params=v_embed_arg)
+            #actor = build_actor(i_module, t_input, t_action_mask, extra_params=v_embed_arg)
+            actor = build_actor(i_module, t_input, t_action_mask, extra_params=extra_params)
             actors[i_module] = actor
             #for i_task in range(N_TASKS):
             #    critic = build_critic("%d_%d" % (i_task, i_module), t_input, t_input_next, t_reward,
             #            extra_params=v_embed_arg, extra_params_target=v_embed_arg_next)
             #    critics[i_task, i_module] = critic
         for i_task in range(N_TASKS):
-            critic = build_critic("%d" % i_task, t_input, t_input_next, t_reward,
-                    extra_params=v_embed_arg, extra_params_target=v_embed_arg_next)
+            critic = build_critic("%d" % i_task, t_input, t_input_next,
+                    t_reward, extra_params=extra_params, extra_params_target=extra_params_target)
+                    #extra_params=v_embed_arg, extra_params_target=v_embed_arg_next)
             for i_module in range(N_MODULES):
                 critics[i_task, i_module] = critic
 
-        for i_module in range(N_MODULES):
-            for i_module_target in list(range(N_MODULES)) + [None]:
-            #for i_module_target in [None]:
-                for i_task in range(N_TASKS):
-                    critic = critics[i_task, i_module]
-                    critic_target = None if i_module_target is None else critics[i_task, i_module_target]
-                    critic_trainer = build_critic_trainer(t_reward, critic, critic_target)
-                    critic_trainers[i_task, i_module, i_module_target] = critic_trainer
+        ### for i_module in range(N_MODULES):
+        ###     for i_module_target in list(range(N_MODULES)) + [None]:
+        ###     #for i_module_target in [None]:
+        ###         for i_task in range(N_TASKS):
+        ###             critic = critics[i_task, i_module]
+        ###             critic_target = None if i_module_target is None else critics[i_task, i_module_target]
+        ###             critic_trainer = build_critic_trainer(t_reward, critic, critic_target)
+        ###             critic_trainers[i_task, i_module, i_module_target] = critic_trainer
 
-                    actor = actors[i_module]
-                    actor_trainer = build_actor_trainer(actor, t_reward, critic, critic_target)
-                    actor_trainers[i_task, i_module, i_module_target] = actor_trainer
+        ###             actor = actors[i_module]
+        ###             actor_trainer = build_actor_trainer(actor, t_reward, critic, critic_target)
+        ###             actor_trainers[i_task, i_module, i_module_target] = actor_trainer
+        for i_module in range(N_MODULES):
+            for i_task in range(N_TASKS):
+                critic = critics[i_task, i_module]
+                critic_trainer = build_critic_trainer(t_reward, critic)
+                critic_trainers[i_task, i_module] = critic_trainer
+
+                actor = actors[i_module]
+                actor_trainer = build_actor_trainer(actor, t_reward, critic)
+                actor_trainers[i_task, i_module] = actor_trainer
 
         self.t_gradient_placeholders = {}
         self.t_update_gradient_op = None
@@ -184,7 +227,7 @@ class ModularACModel(object):
         self.session = tf.Session()
         self.session.run(tf.initialize_all_variables())
 
-        self.t_assign_embed_ops = t_assign_embed_ops
+        #self.t_assign_embed_ops = t_assign_embed_ops
         self.actors = actors
         self.critics = critics
         self.actor_trainers = actor_trainers
@@ -254,21 +297,21 @@ class ModularACModel(object):
                 continue
             actor = self.actors[self.actions[indices[0]][i_subtask]]
             feed_dict = {
-                self.inputs.t_arg: [self.args[i][i_subtask] for i in indices],
+                #self.inputs.t_arg: [self.args[i][i_subtask] for i in indices],
                 self.inputs.t_feats: [states[i].features() for i in indices],
-                self.inputs.t_step: [self.i_step[i] for i in indices]
+                #self.inputs.t_step: [self.i_step[i] for i in indices]
             }
             logprobs = self.session.run([actor.t_probs], feed_dict=feed_dict)[0]
             probs = np.exp(logprobs)
             for pr, i in zip(probs, indices):
 
                 #a = self.randoms[i].choice(self.n_actions, p=pr)
-                if self.i_step[i] >= .9999:
-                    a = self.n_actions
+                if self.i_step[i] >= 1.4999:
+                    a = self.world.n_actions
                 else:
                     a = self.randoms[i].choice(self.n_actions, p=pr)
 
-                if a == self.n_actions:
+                if a == self.world.n_actions:
                     self.i_subtask[i] += 1
                     self.i_step[i] = 0.
                 t = self.i_subtask[i] >= len(self.actions[indices[0]])
@@ -345,7 +388,9 @@ class ModularACModel(object):
 
         by_mod = defaultdict(list)
         for e in batch:
-            by_mod[e.m1.task, e.m1.action, e.m2.action].append(e)
+            ### by_mod[e.m1.task, e.m1.action, e.m2.action].append(e)
+            by_mod[e.m1.task, e.m1.action].append(e)
+
             #by_mod[0, e.m1[0], e.m1[0]].append(e)
 
         #print {k: len(v) for k, v in by_mod.items()}
@@ -364,13 +409,14 @@ class ModularACModel(object):
 
         total_actor_err = 0
         total_critic_err = 0
-        for i_task, i_mod1, i_mod2 in by_mod:
+        ### for i_task, i_mod1, i_mod2 in by_mod:
+        for i_task, i_mod1 in by_mod:
             actor = self.actors[i_mod1]
             critic = self.critics[i_task, i_mod1]
-            actor_trainer = self.actor_trainers[i_task, i_mod1, i_mod2]
-            critic_trainer = self.critic_trainers[i_task, i_mod1, i_mod2]
+            actor_trainer = self.actor_trainers[i_task, i_mod1]
+            critic_trainer = self.critic_trainers[i_task, i_mod1]
 
-            all_exps = by_mod[i_task, i_mod1, i_mod2]
+            all_exps = by_mod[i_task, i_mod1]
             for i_batch in range(int(np.ceil(1. * len(all_exps) / N_BATCH))):
                 exps = all_exps[i_batch * N_BATCH : (i_batch + 1) * N_BATCH]
                 s1, m1, a, s2, m2, r = zip(*exps)
@@ -387,10 +433,10 @@ class ModularACModel(object):
                     a_mask[i_datum, aa] = 1
 
                 feed_dict = {
-                    self.inputs.t_arg: args1,
-                    self.inputs.t_arg_next: args2,
-                    self.inputs.t_step: steps1,
-                    self.inputs.t_step_next: steps2,
+                    #self.inputs.t_arg: args1,
+                    #self.inputs.t_arg_next: args2,
+                    #self.inputs.t_step: steps1,
+                    #self.inputs.t_step_next: steps2,
                     self.inputs.t_feats: feats1,
                     self.inputs.t_feats_next: feats2,
                     self.inputs.t_action_mask: a_mask,
@@ -419,6 +465,13 @@ class ModularACModel(object):
                 #print actor_err
                 #print critic_err
                 #exit()
+
+                #print i_task, \
+                #        i_mod1, \
+                #        sum([ag.sum() for ag in actor_grad]) / len(exps)
+                #        #actor_err / len(exps), \
+                #        #critic_err / len(exps), \
+                #        #sum(r) / len(exps)
 
                 total_actor_err += actor_err
                 total_critic_err += critic_err

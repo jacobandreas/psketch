@@ -6,10 +6,10 @@ import numpy as np
 from skimage.measure import block_reduce
 import time
 
-WIDTH = 12
-HEIGHT = 12
-#WIDTH = 7
-#HEIGHT = 7
+#WIDTH = 12
+#HEIGHT = 12
+WIDTH = 8
+HEIGHT = 8
 
 WINDOW_WIDTH = 5
 WINDOW_HEIGHT = 5
@@ -72,7 +72,8 @@ class GridWorld(object):
             ingredients = self.cookbook.primitives_for(goal)
             return self.sample_scenario(ingredients)
         else:
-            assert False
+            pass
+            #assert False
 
     def sample_scenario(self, ingredients):
         # generate grid
@@ -209,7 +210,7 @@ class GridState(object):
                 features[-1] = 1
             else:
                 features = np.concatenate((grid_feats.ravel(),
-                        grid_feats_big_red.ravel(), self.inventory / 10, 
+                        grid_feats_big_red.ravel(), self.inventory, 
                         dir_features, [0]))
             assert len(features) == self.world.n_features
             self._cached_features = features
@@ -261,7 +262,7 @@ class GridState(object):
                 n_grid = self.grid.copy()
 
                 if thing in self.world.grabbable_indices:
-                    n_inventory[thing] += 2
+                    n_inventory[thing] += 1
                     n_grid[nx, ny, thing] = 0
                     success = True
 
