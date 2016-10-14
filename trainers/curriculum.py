@@ -8,7 +8,7 @@ import numpy as np
 import yaml
 
 N_ITERS = 1000000
-N_UPDATE = 100
+N_UPDATE = 500
 MAX_TIMESTEPS = 75
 IMPROVEMENT_THRESHOLD = 0.8
 #IMPROVEMENT_THRESHOLD = 0.5
@@ -107,7 +107,7 @@ class CurriculumTrainer(object):
     #@profile
     def train(self, model, world):
         model.prepare(world)
-        model.load()
+        #model.load()
         #actions = itertools.cycle(self.tasks_by_action.keys())
         actions = self.tasks_by_action.keys()
         #actions = [2]
@@ -177,7 +177,9 @@ class CurriculumTrainer(object):
                 print task_probs
                 print
                 ### print action
-                print [t.a for t in transitions[-1]]
+                print [t.a for t in transitions[0]]
+                print [t.a for t in transitions[1]]
+                print [t.a for t in transitions[2]]
                 print total_reward / n_rollouts
                 print err / N_UPDATE
                 score_dict = {model.task_index.get(k): 1. * by_task[k] / all_by_task[k] for k in by_task}
@@ -194,5 +196,5 @@ class CurriculumTrainer(object):
             #if min_reward > 0.90:
             if min_reward > IMPROVEMENT_THRESHOLD:
                 max_steps += 1
-                #model.save()
+                model.save()
                 #exit()

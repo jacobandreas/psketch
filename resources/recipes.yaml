@@ -3,12 +3,14 @@ environment:
   - workshop0
   - workshop1
   - workshop2
+  - water
 
 primitives:
   - iron
   - grass
   - wood
   - stone
+  - gold
 
 recipes:
   plank:

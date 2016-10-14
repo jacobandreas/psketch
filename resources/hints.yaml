@@ -30,3 +30,6 @@
 
 "make[shears]":
   ["get_wood[wood]", "make1[stick]", "get_iron[iron]", "make1[shears]"]
+
+"get[gold]":
+  ["get_iron[iron]", "get_wood[wood]", "make2[bridge]", "get_gold[gold]"]

@@ -8,4 +8,5 @@ model:
   #name: ModularModel
 trainer: 
   name: CurriculumTrainer
+  #hints: "resources/hints_indep.yaml"
   hints: "resources/hints.yaml"

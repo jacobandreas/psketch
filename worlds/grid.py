@@ -6,10 +6,10 @@ import numpy as np
 from skimage.measure import block_reduce
 import time
 
-#WIDTH = 12
-#HEIGHT = 12
-WIDTH = 8
-HEIGHT = 8
+WIDTH = 10
+HEIGHT = 10
+#WIDTH = 8
+#HEIGHT = 8
 
 WINDOW_WIDTH = 5
 WINDOW_HEIGHT = 5
@@ -61,6 +61,7 @@ class GridWorld(object):
                 if i not in self.non_grabbable_indices]
         self.workshop_indices = [self.cookbook.index["workshop%d" % i]
                 for i in range(N_WORKSHOPS)]
+        self.water_index = [self.cookbook.index["water"]]
 
         self.random = np.random.RandomState(0)
 
@@ -84,12 +85,20 @@ class GridWorld(object):
         grid[:, 0, i_bd] = 1
         grid[:, HEIGHT-1:, i_bd] = 1
 
-        #for ingredient, count in ingredients.items():
-        #    for _ in range(count):
-        #        (x, y) = random_free(grid)
-        #        grid[x, y, self.cookbook.index[ingredient]] = 1
+        # gold
+        #(gx, gy) = random_free(grid, self.random)
+        (gx, gy) = (1 + np.random.randint(WIDTH-2), 1)
+        grid[gx, gy, self.cookbook.index["gold"]] = 1
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if not grid[gx+i, gy+j, :].any():
+                    grid[gx+i, gy+j, self.cookbook.index["water"]] = 1
+
+        # ingredients
         for primitive in self.cookbook.primitives:
-            for i in range(5):
+            if primitive == "gold":
+                continue
+            for i in range(4):
                 (x, y) = random_free(grid, self.random)
                 grid[x, y, self.cookbook.index[primitive]] = 1
 
@@ -240,6 +249,7 @@ class GridState(object):
 
         # use actions
         elif action == USE:
+            cookbook = self.world.cookbook
             dx, dy = (0, 0)
             success = False
             for nx, ny in neighbors(self.pos, self.dir):
@@ -254,8 +264,9 @@ class GridState(object):
                 assert here.sum() == 1
                 thing = here.argmax()
 
-                if not(thing in self.world.grabbable_indices or thing in
-                        self.world.workshop_indices):
+                if not(thing in self.world.grabbable_indices or \
+                        thing in self.world.workshop_indices or \
+                        thing == self.world.water_index):
                     continue
                 
                 n_inventory = self.inventory.copy()
@@ -267,7 +278,6 @@ class GridState(object):
                     success = True
 
                 elif thing in self.world.workshop_indices:
-                    cookbook = self.world.cookbook
                     workshop = cookbook.index.get(thing)
                     for output, inputs in cookbook.recipes.items():
                         if inputs["_at"] != workshop:
@@ -281,6 +291,11 @@ class GridState(object):
                         for i in ing:
                             n_inventory[cookbook.index[i]] -= inputs[i]
                         success = True
+
+                elif thing == self.world.water_index:
+                    if n_inventory[cookbook.index["bridge"]] > 0:
+                        n_grid[nx, ny, self.world.water_index] = 0
+                        n_inventory[self.world.water_index] -= 1
 
                 break
 

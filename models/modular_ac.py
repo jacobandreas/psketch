@@ -6,10 +6,10 @@ from collections import namedtuple, defaultdict
 import numpy as np
 import tensorflow as tf
 
-N_UPDATE = 10000
-N_BATCH = 5000
-#N_UPDATE = 1000
-#N_BATCH = 1000
+#N_UPDATE = 10000
+#N_BATCH = 5000
+N_UPDATE = 2000
+N_BATCH = 2000
 
 #N_UPDATE = 100
 #N_BATCH = 100
@@ -20,15 +20,16 @@ N_EMBED = 64
 #N_MODULES = 6
 #N_TASKS = 10
 #N_MODULES = 6
-N_MODULES = 8
-N_TASKS = 9
+N_MODULES = 10
+N_TASKS = 10
 
 DISCOUNT = 0.9
 EPS = 0.1
 TEMP = 1000
 MAX_EXPERIENCES = 10000
 
-ActorModule = namedtuple("ActorModule", ["t_probs", "t_chosen_prob", "params"])
+ActorModule = namedtuple("ActorModule", ["t_probs", "t_chosen_prob", "params",
+        "t_decrement_op"])
 CriticModule = namedtuple("CriticModule", ["t_value", "t_value_target",
         "t_advantage", "params", "params_target", "t_assign_ops"])
 Trainer = namedtuple("Trainer", ["t_loss", "t_grad", "t_train_op", "foo"])
@@ -58,8 +59,8 @@ class ModularACModel(object):
     def prepare(self, world):
         assert self.world is None
         self.world = world
-        #self.n_actions = world.n_actions + 1
-        self.n_actions = world.n_actions
+        self.n_actions = world.n_actions + 1
+        #self.n_actions = world.n_actions
         self.t_n_steps = tf.Variable(1., name="n_steps")
         self.t_inc_steps = self.t_n_steps.assign(self.t_n_steps + 1)
         self.optimizer = tf.train.RMSPropOptimizer(0.001)
@@ -68,6 +69,10 @@ class ModularACModel(object):
         def build_actor(index, t_input, t_action_mask, extra_params=[]):
             with tf.variable_scope("actor_%s" % index):
                 t_action_score, v_action = net.mlp(t_input, (N_HIDDEN, self.n_actions))
+
+                v_bias = v_action[-1]
+                assert "b1" in v_bias.name
+                t_decrement_op = v_bias[-1].assign(v_bias[-1] - 3)
                 #t_action_score, v_action = net.mlp(t_input, (self.n_actions,))
                 #t_action_score, v_action = net.mlp(t_input, (self.n_actions,))
                 #t_w_action_score = t_action_score / (1000 / self.t_n_steps + 1)
@@ -76,7 +81,8 @@ class ModularACModel(object):
                 t_action_logprobs = tf.nn.log_softmax(t_w_action_score)
                 t_chosen_prob = tf.reduce_sum(
                         t_action_mask * t_action_logprobs, reduction_indices=(1,))
-            return ActorModule(t_action_logprobs, t_chosen_prob, v_action + extra_params)
+            return ActorModule(t_action_logprobs, t_chosen_prob, 
+                    v_action+extra_params, t_decrement_op)
 
         def build_critic(index, t_input, t_input_next, t_reward, extra_params=[],
                 extra_params_target=[]):
@@ -226,6 +232,7 @@ class ModularACModel(object):
 
         self.session = tf.Session()
         self.session.run(tf.initialize_all_variables())
+        self.session.run([actor.t_decrement_op for actor in actors.values()])
 
         #self.t_assign_embed_ops = t_assign_embed_ops
         self.actors = actors
@@ -259,9 +266,23 @@ class ModularACModel(object):
 
     def load(self):
         self.saver.restore(self.session, "modular_ac.chk")
-        #for var in tf.get_collection(tf.GraphKeys.VARIABLES):
-        #    print var.name
+        return
+
+        i = 0
+        for var in tf.get_collection(tf.GraphKeys.VARIABLES):
+            if "RMSProp" in var.name:
+                continue
+            if "actor" not in var.name:
+                continue
+            if "b1" not in var.name:
+                continue
+            last = self.session.run([var])[0][-1]
+            if last == 0:
+                self.session.run([self.actors[i].t_decrement_op])
+            i += 1
+            #print var.name, self.session.run([var])
         #exit()
+        print "warning: ugly post-load decrement"
 
     def experience(self, episode):
         running_reward = 0
@@ -307,11 +328,11 @@ class ModularACModel(object):
 
                 #a = self.randoms[i].choice(self.n_actions, p=pr)
                 if self.i_step[i] >= 1.4999:
-                    a = self.world.n_actions
+                    a = self.n_actions
                 else:
                     a = self.randoms[i].choice(self.n_actions, p=pr)
 
-                if a == self.world.n_actions:
+                if a >= self.world.n_actions:
                     self.i_subtask[i] += 1
                     self.i_step[i] = 0.
                 t = self.i_subtask[i] >= len(self.actions[indices[0]])
