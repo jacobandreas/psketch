@@ -8,13 +8,21 @@ class Cookbook(object):
     def __init__(self, recipes_path):
         with open(recipes_path) as recipes_f:
             recipes = yaml.load(recipes_f)
-        self.environment = set(recipes["environment"])
-        self.primitives = set(recipes["primitives"])
-        self.recipes = recipes["recipes"]
-        kinds = list(self.environment) + list(self.primitives) + self.recipes.keys()
+        #self.environment = set(recipes["environment"])
         self.index = Index()
-        for k in kinds:
-            self.index.index(k)
+        self.environment = set(self.index.index(e) for e in recipes["environment"])
+        self.primitives = set(self.index.index(p) for p in recipes["primitives"])
+        self.recipes = {}
+        for output, inputs in recipes["recipes"].items():
+            d = {}
+            for inp, count in inputs.items():
+                # special keys
+                if "_" in inp:
+                    d[inp] = count
+                else:
+                    d[self.index.index(inp)] = count
+            self.recipes[self.index.index(output)] = d
+        kinds = self.environment | self.primitives | set(self.recipes.keys())
         self.n_kinds = len(self.index)
 
     def primitives_for(self, goal):
@@ -28,7 +36,8 @@ class Cookbook(object):
                 out[kind] += count
 
         for ingredient, count in self.recipes[goal].items():
-            if ingredient[0] == "_":
+            if not isinstance(ingredient, int):
+                assert ingredient[0] == "_"
                 continue
             elif ingredient in self.primitives:
                 insert(ingredient, count)

@@ -1,12 +1,10 @@
 recipes: "resources/recipes.yaml"
 world: 
   name: GridWorld
-  #name: LineWorld
 model: 
-  #name: ReflexModel
   name: ModularACModel
-  #name: ModularModel
+  use_args: false
 trainer: 
   name: CurriculumTrainer
-  #hints: "resources/hints_indep.yaml"
-  hints: "resources/hints.yaml"
+  improvement_threshold: 0.8
+  hints: "resources/hints.simple.yaml"

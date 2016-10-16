@@ -18,9 +18,6 @@ def main():
     trainer.train(model, world)
 
 def configure():
-    #np.random.seed(2)
-    #random.seed(2)
-    #tf.set_random_seed(2)
     with open("config.yaml") as config_f:
         config = Struct(**yaml.load(config_f))
     return config

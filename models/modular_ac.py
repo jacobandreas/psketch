@@ -55,6 +55,7 @@ class ModularACModel(object):
         self.task_index = util.Index()
         tf.set_random_seed(0)
         self.next_actor_seed = 0
+        self.config = config
 
     def prepare(self, world):
         assert self.world is None
@@ -243,17 +244,20 @@ class ModularACModel(object):
                 t_feats, t_feats_next, t_action_mask, t_reward)
         ### self.optimizer = trpo.TrustRegionOptimizer(actors, scratch_actors, self.inputs, self.session)
 
-    def init(self, states, hints):
+    def init(self, states, steps):
         n_act_batch = len(states)
-        #self.actions, self.args = zip(*hint)
         self.actions = []
         self.args = []
         self.i_task = []
         for i in range(n_act_batch):
-            actions, args = zip(*hints[i])
-            self.actions.append(actions)
-            self.args.append(args)
-            self.i_task.append(self.task_index.index(tuple(hints[i])))
+            if self.config.model.use_args:
+                actions, args = zip(*steps[i])
+            else:
+                actions = steps[i]
+                args = [None] * len(actions)
+            self.actions.append(tuple(actions))
+            self.args.append(tuple(args))
+            self.i_task.append(self.task_index.index(tuple(steps[i])))
         self.i_subtask = [0 for _ in range(n_act_batch)]
         self.i_step = np.zeros((n_act_batch, 1))
         self.randoms = []
@@ -445,10 +449,10 @@ class ModularACModel(object):
                 args1 = [m.arg for m in m1]
                 #steps1 = [[m.step / 10.] for m in m1]
                 steps1 = [m.step for m in m1]
-                feats2 = [s.features() for s in s2]
-                args2 = [m.arg or 0 for m in m2]
+                #feats2 = [s.features() for s in s2]
+                #args2 = [m.arg or 0 for m in m2]
                 #steps2 = [[m.step / 10.] for m in m2]
-                steps2 = [m.step for m in m2]
+                #steps2 = [m.step for m in m2]
                 a_mask = np.zeros((len(exps), self.n_actions))
                 for i_datum, aa in enumerate(a):
                     a_mask[i_datum, aa] = 1
@@ -459,7 +463,7 @@ class ModularACModel(object):
                     #self.inputs.t_step: steps1,
                     #self.inputs.t_step_next: steps2,
                     self.inputs.t_feats: feats1,
-                    self.inputs.t_feats_next: feats2,
+                    #self.inputs.t_feats_next: feats2,
                     self.inputs.t_action_mask: a_mask,
                     self.inputs.t_reward: r
                 }

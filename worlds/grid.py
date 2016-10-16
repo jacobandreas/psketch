@@ -55,28 +55,27 @@ class GridWorld(object):
                 1
         self.n_actions = N_ACTIONS
 
-        self.non_grabbable_indices = [self.cookbook.index[e] 
-                for e in self.cookbook.environment]
+        self.non_grabbable_indices = self.cookbook.environment
         self.grabbable_indices = [i for i in range(self.cookbook.n_kinds)
                 if i not in self.non_grabbable_indices]
         self.workshop_indices = [self.cookbook.index["workshop%d" % i]
                 for i in range(N_WORKSHOPS)]
-        self.water_index = [self.cookbook.index["water"]]
+        self.water_index = self.cookbook.index["water"]
 
         self.random = np.random.RandomState(0)
 
     def sample_scenario_with_goal(self, goal):
         assert goal not in self.cookbook.environment
         if goal in self.cookbook.primitives:
-            return self.sample_scenario({goal: 1})
+            make_island = self.cookbook.index["gold"]
+            return self.sample_scenario({goal: 1}, make_island=make_island)
         elif goal in self.cookbook.recipes:
             ingredients = self.cookbook.primitives_for(goal)
             return self.sample_scenario(ingredients)
         else:
-            pass
-            #assert False
+            assert False, "don't know how to build a scenario for %s" % goal
 
-    def sample_scenario(self, ingredients):
+    def sample_scenario(self, ingredients, make_island=False):
         # generate grid
         grid = np.zeros((WIDTH, HEIGHT, self.cookbook.n_kinds))
         i_bd = self.cookbook.index["boundary"]
@@ -87,20 +86,21 @@ class GridWorld(object):
 
         # gold
         #(gx, gy) = random_free(grid, self.random)
-        (gx, gy) = (1 + np.random.randint(WIDTH-2), 1)
-        grid[gx, gy, self.cookbook.index["gold"]] = 1
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                if not grid[gx+i, gy+j, :].any():
-                    grid[gx+i, gy+j, self.cookbook.index["water"]] = 1
+        if make_island:
+            (gx, gy) = (1 + np.random.randint(WIDTH-2), 1)
+            grid[gx, gy, self.cookbook.index["gold"]] = 1
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    if not grid[gx+i, gy+j, :].any():
+                        grid[gx+i, gy+j, self.cookbook.index["water"]] = 1
 
         # ingredients
         for primitive in self.cookbook.primitives:
-            if primitive == "gold":
+            if primitive == self.cookbook.index["gold"]:
                 continue
             for i in range(4):
                 (x, y) = random_free(grid, self.random)
-                grid[x, y, self.cookbook.index[primitive]] = 1
+                grid[x, y, primitive] = 1
 
         # generate crafting stations
         for i_ws in range(N_WORKSHOPS):
@@ -174,7 +174,7 @@ class GridScenario(object):
         return state
 
 class GridState(object):
-    def __init__(self, scenario, grid, pos, dir, inventory, terminal=False):
+    def __init__(self, scenario, grid, pos, dir, inventory):
         self.scenario = scenario
         self.world = scenario.world
         self.grid = grid
@@ -182,11 +182,9 @@ class GridState(object):
         self.pos = pos
         self.dir = dir
         self._cached_features = None
-        self.terminal = terminal
 
-    def as_terminal(self):
-        return GridState(self.scenario, self.grid, self.pos, self.dir,
-                self.inventory, terminal=True)
+    def satisfies(self, goal_name, goal_arg):
+        return self.inventory[goal_arg] > 0
 
     def features(self):
         if self._cached_features is None:
@@ -214,15 +212,12 @@ class GridState(object):
             dir_features = np.zeros(4)
             dir_features[self.dir] = 1
 
-            if self.terminal:
-                features = np.zeros(self.world.n_features)
-                features[-1] = 1
-            else:
-                features = np.concatenate((grid_feats.ravel(),
-                        grid_feats_big_red.ravel(), self.inventory, 
-                        dir_features, [0]))
+            features = np.concatenate((grid_feats.ravel(),
+                    grid_feats_big_red.ravel(), self.inventory, 
+                    dir_features, [0]))
             assert len(features) == self.world.n_features
             self._cached_features = features
+
         return self._cached_features
 
     def step(self, action):
@@ -261,6 +256,7 @@ class GridState(object):
                     print here.sum()
                     print self.grid.sum(axis=2)
                     print self.grid.sum(axis=0).sum(axis=0)
+                    print cookbook.index.contents
                 assert here.sum() == 1
                 thing = here.argmax()
 
@@ -278,18 +274,18 @@ class GridState(object):
                     success = True
 
                 elif thing in self.world.workshop_indices:
+                    # TODO this is a little gross
                     workshop = cookbook.index.get(thing)
                     for output, inputs in cookbook.recipes.items():
                         if inputs["_at"] != workshop:
                             continue
                         yld = inputs["_yield"] if "_yield" in inputs else 1
-                        ing = [i for i in inputs if i[0] != "_"]
-                        if any(n_inventory[cookbook.index[i]] < inputs[i] for i
-                                in ing):
+                        ing = [i for i in inputs if isinstance(i, int)]
+                        if any(n_inventory[i] < inputs[i] for i in ing):
                             continue
-                        n_inventory[cookbook.index[output]] += yld
+                        n_inventory[output] += yld
                         for i in ing:
-                            n_inventory[cookbook.index[i]] -= inputs[i]
+                            n_inventory[i] -= inputs[i]
                         success = True
 
                 elif thing == self.world.water_index:
