@@ -4,13 +4,14 @@ environment:
   - workshop1
   - workshop2
   - water
+  - stone
 
 primitives:
   - iron
   - grass
   - wood
-  - stone
   - gold
+  - gem
 
 recipes:
   plank:

@@ -4,7 +4,11 @@ world:
 model: 
   name: ModularACModel
   use_args: false
+  #max_subtask_timesteps: 100
+  max_subtask_timesteps: 15
 trainer: 
   name: CurriculumTrainer
   improvement_threshold: 0.8
-  hints: "resources/hints.simple.yaml"
+  #hints: "resources/hints.indep.yaml"
+  hints: "resources/hints.yaml"
+  max_timesteps: 100

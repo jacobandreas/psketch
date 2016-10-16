@@ -8,8 +8,6 @@ import time
 
 WIDTH = 10
 HEIGHT = 10
-#WIDTH = 8
-#HEIGHT = 8
 
 WINDOW_WIDTH = 5
 WINDOW_HEIGHT = 5
@@ -61,21 +59,24 @@ class GridWorld(object):
         self.workshop_indices = [self.cookbook.index["workshop%d" % i]
                 for i in range(N_WORKSHOPS)]
         self.water_index = self.cookbook.index["water"]
+        self.stone_index = self.cookbook.index["stone"]
 
         self.random = np.random.RandomState(0)
 
     def sample_scenario_with_goal(self, goal):
         assert goal not in self.cookbook.environment
         if goal in self.cookbook.primitives:
-            make_island = self.cookbook.index["gold"]
-            return self.sample_scenario({goal: 1}, make_island=make_island)
+            make_island = goal == self.cookbook.index["gold"]
+            make_cave = goal == self.cookbook.index["gem"]
+            return self.sample_scenario({goal: 1}, make_island=make_island,
+                    make_cave=make_cave)
         elif goal in self.cookbook.recipes:
             ingredients = self.cookbook.primitives_for(goal)
             return self.sample_scenario(ingredients)
         else:
             assert False, "don't know how to build a scenario for %s" % goal
 
-    def sample_scenario(self, ingredients, make_island=False):
+    def sample_scenario(self, ingredients, make_island=False, make_cave=False):
         # generate grid
         grid = np.zeros((WIDTH, HEIGHT, self.cookbook.n_kinds))
         i_bd = self.cookbook.index["boundary"]
@@ -84,19 +85,23 @@ class GridWorld(object):
         grid[:, 0, i_bd] = 1
         grid[:, HEIGHT-1:, i_bd] = 1
 
-        # gold
-        #(gx, gy) = random_free(grid, self.random)
-        if make_island:
+        # treasure
+        if make_island or make_cave:
             (gx, gy) = (1 + np.random.randint(WIDTH-2), 1)
-            grid[gx, gy, self.cookbook.index["gold"]] = 1
+            treasure_index = \
+                    self.cookbook.index["gold"] if make_island else self.cookbook.index["gem"]
+            wall_index = \
+                    self.water_index if make_island else self.stone_index
+            grid[gx, gy, treasure_index] = 1
             for i in range(-1, 2):
                 for j in range(-1, 2):
                     if not grid[gx+i, gy+j, :].any():
-                        grid[gx+i, gy+j, self.cookbook.index["water"]] = 1
+                        grid[gx+i, gy+j, wall_index] = 1
 
         # ingredients
         for primitive in self.cookbook.primitives:
-            if primitive == self.cookbook.index["gold"]:
+            if primitive == self.cookbook.index["gold"] or \
+                    primitive == self.cookbook.index["gem"]:
                 continue
             for i in range(4):
                 (x, y) = random_free(grid, self.random)
@@ -145,10 +150,6 @@ class GridWorld(object):
                         elif thing == self.cookbook.index["boundary"]:
                             ch1 = ch2 = curses.ACS_BOARD
                             color = curses.color_pair(10 + thing)
-                        #elif thing == self.cookbook.index["workshop0"]:
-                        #    ch1 = "W"
-                        #    ch2 = "0"
-                        #    color = curses.color_pair(10 + thing)
                         else:
                             name = self.cookbook.index.get(thing)
                             ch1 = name[0]
@@ -262,7 +263,8 @@ class GridState(object):
 
                 if not(thing in self.world.grabbable_indices or \
                         thing in self.world.workshop_indices or \
-                        thing == self.world.water_index):
+                        thing == self.world.water_index or \
+                        thing == self.world.stone_index):
                     continue
                 
                 n_inventory = self.inventory.copy()
@@ -274,7 +276,7 @@ class GridState(object):
                     success = True
 
                 elif thing in self.world.workshop_indices:
-                    # TODO this is a little gross
+                    # TODO not with strings
                     workshop = cookbook.index.get(thing)
                     for output, inputs in cookbook.recipes.items():
                         if inputs["_at"] != workshop:
@@ -291,7 +293,11 @@ class GridState(object):
                 elif thing == self.world.water_index:
                     if n_inventory[cookbook.index["bridge"]] > 0:
                         n_grid[nx, ny, self.world.water_index] = 0
-                        n_inventory[self.world.water_index] -= 1
+                        n_inventory[cookbook.index["bridge"]] -= 1
+
+                elif thing == self.world.stone_index:
+                    if n_inventory[cookbook.index["axe"]] > 0:
+                        n_grid[nx, ny, self.world.stone_index] = 0
 
                 break
 
