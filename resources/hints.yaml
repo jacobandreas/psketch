@@ -26,4 +26,4 @@
   ["get_iron", "get_wood", "make2", "get_gold"]
 
 "get[gem]":
-  ["get_wood", "make1", "get_iron", "make1", "get_gem"]
+  ["get_wood", "make1", "get_iron", "make0", "get_gem"]
