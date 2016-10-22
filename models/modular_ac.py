@@ -5,6 +5,7 @@ import trpo
 from collections import namedtuple, defaultdict
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.framework.ops import IndexedSlicesValue
 
 N_UPDATE = 2000
 N_BATCH = 2000
@@ -27,7 +28,7 @@ def increment_sparse_or_dense(into, increment):
     assert isinstance(into, np.ndarray)
     if isinstance(increment, np.ndarray):
         into += increment
-    elif isinstance(increment, tf.python.framework.ops.IndexedSlicesValue):
+    elif isinstance(increment, IndexedSlicesValue):
         for i in range(increment.values.shape[0]):
             into[increment.indices[i], :] += increment.values[i, :]
     else:
@@ -102,8 +103,14 @@ class ModularACModel(object):
         t_action_mask = tf.placeholder(tf.float32, shape=(None, self.n_actions))
         t_reward = tf.placeholder(tf.float32, shape=(None,))
 
-        t_input = t_feats
-        xp = []
+        if self.config.model.use_args:
+            t_embed, v_embed = net.embed(t_arg, len(trainer.cookbook.index),
+                    N_EMBED)
+            xp = v_embed
+            t_input = tf.concat(1, (t_embed, t_feats))
+        else:
+            t_input = t_feats
+            xp = []
 
         actors = {}
         actor_trainers = {}
@@ -183,6 +190,7 @@ class ModularACModel(object):
                 self.experiences.append(n_transition)
 
     def act(self, states):
+        mstates = self.get_state()
         self.i_step += 1
         by_mod = defaultdict(list)
         n_act_batch = len(self.i_subtask)
@@ -202,6 +210,9 @@ class ModularACModel(object):
             feed_dict = {
                 self.inputs.t_feats: [states[i].features() for i in indices],
             }
+            if self.config.model.use_args:
+                feed_dict[self.inputs.t_arg] = [mstates[i].arg for i in indices]
+
             logprobs = self.session.run([actor.t_probs], feed_dict=feed_dict)[0]
             probs = np.exp(logprobs)
             for pr, i in zip(probs, indices):
@@ -280,6 +291,8 @@ class ModularACModel(object):
                     self.inputs.t_action_mask: a_mask,
                     self.inputs.t_reward: r
                 }
+                if self.config.model.use_args:
+                    feed_dict[self.inputs.t_arg] = args1
 
                 actor_grad, actor_err = self.session.run([actor_trainer.t_grad, actor_trainer.t_loss],
                         feed_dict=feed_dict)
