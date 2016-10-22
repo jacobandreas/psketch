@@ -1,0 +1,17 @@
+#"go[L]":
+#  ["left"]
+
+"go[LD]":
+  ["left", "down"]
+
+"go[RR]":
+  ["right", "right"]
+
+"go[UR]":
+  ["up", "right"]
+
+"go[RUL]":
+  ["right", "up", "left"]
+
+"go[RDDL]":
+  ["right", "down", "down", "left"]

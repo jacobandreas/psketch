@@ -1,0 +1,10 @@
+environment:
+  - L
+  - LD
+  - RR
+  - UR
+  - RUL
+  - RDDL
+
+primitives: {}
+recipes: {}

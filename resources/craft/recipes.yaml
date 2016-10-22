@@ -1,0 +1,56 @@
+environment:
+  - boundary
+  - workshop0
+  - workshop1
+  - workshop2
+  - water
+  - stone
+
+primitives:
+  - iron
+  - grass
+  - wood
+  - gold
+  - gem
+
+recipes:
+  plank:
+    wood: 1
+    _at: workshop0
+
+  axe:
+    stick: 1
+    iron: 1
+    _at: workshop0
+
+  rope:
+    grass: 1
+    _at: workshop0
+
+  stick:
+    wood: 1
+    _at: workshop1
+
+  bed:
+    plank: 1
+    grass: 1
+    _at: workshop1
+
+  shears:
+    stick: 1
+    iron: 1
+    _at: workshop1
+
+  cloth:
+    grass: 1
+    _at: workshop2
+
+  bridge:
+    wood: 1
+    iron: 1
+    _at: workshop2
+
+  ladder:
+    plank: 1
+    stick: 1
+    _at: workshop2
