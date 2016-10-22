@@ -79,6 +79,8 @@ class CurriculumTrainer(object):
         while not all(done) and timer > 0:
             mstates_before = model.get_state()
             action, terminate = model.act(states_before)
+            #print states_before[0].pp()
+            #print action[0]
             mstates_after = model.get_state()
             states_after = [None for _ in range(N_BATCH)]
             for i in range(N_BATCH):
@@ -110,6 +112,7 @@ class CurriculumTrainer(object):
 
     def train(self, model, world):
         model.prepare(world, self)
+        #model.load()
         subtasks = self.tasks_by_subtask.keys()
         max_steps = 1
 

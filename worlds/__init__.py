@@ -1,5 +1,6 @@
 from line import LineWorld
-from grid import GridWorld
+from craft import CraftWorld
+from light import LightWorld
 
 def load(config):
     cls_name = config.world.name
