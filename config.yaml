@@ -6,6 +6,7 @@ model:
   name: ModularACModel
   use_args: false
   max_subtask_timesteps: 15
+  baseline: task
 trainer: 
   name: CurriculumTrainer
   improvement_threshold: 0.8

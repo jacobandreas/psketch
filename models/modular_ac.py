@@ -74,8 +74,14 @@ class ModularACModel(object):
 
         def build_critic(index, t_input, t_reward, extra_params=[]):
             with tf.variable_scope("critic_%s" % index):
-                t_value, v_value = net.mlp(t_input, (1,))
-                t_value = tf.squeeze(t_value)
+                if self.config.model.baseline == "task":
+                    t_value = v_value = tf.get_variable("b", shape=(),
+                            initializer=tf.constant_initializer(0.0))
+                elif self.config.model.baseline == "state":
+                    t_value, v_value = net.mlp(t_input, (1,))
+                    t_value = tf.squeeze(t_value)
+                else:
+                    raise NotImplementedError("Common baseline is not implemented")
             return CriticModule(t_value, v_value + extra_params)
 
         def build_actor_trainer(actor, critic, t_reward):
