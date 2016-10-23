@@ -2,6 +2,7 @@ from misc import util
 import net
 
 from collections import namedtuple, defaultdict
+import logging
 import numpy as np
 import os
 import tensorflow as tf
@@ -185,8 +186,9 @@ class ModularACModel(object):
                 os.path.join(self.config.experiment_dir, "modular_ac.chk"))
 
     def load(self):
-        self.saver.restore(self.session,
-                os.path.join(self.config.experiment_dir, "modular_ac.chk"))
+        path = os.path.join(self.config.experiment_dir, "modular_ac.chk")
+        logging.info("loaded %s", path)
+        self.saver.restore(self.session, path)
 
     def experience(self, episode):
         running_reward = 0
