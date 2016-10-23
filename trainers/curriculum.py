@@ -114,6 +114,7 @@ class CurriculumTrainer(object):
         #model.load()
         subtasks = self.tasks_by_subtask.keys()
         max_steps = 1
+        i_iter = 0
 
         task_probs = []
         while True:
@@ -141,6 +142,7 @@ class CurriculumTrainer(object):
                     err = None
                     # get enough samples for one training step
                     while err is None:
+                        i_iter += N_BATCH
                         transitions, reward = self.do_rollout(model, world, 
                                 possible_tasks, task_probs)
                         for t in transitions:
@@ -154,6 +156,27 @@ class CurriculumTrainer(object):
                         err = model.train()
                     total_err += err
 
+                # log
+                logging.info("[step] %d", i_iter)
+                scores = []
+                for i, task in enumerate(possible_tasks):
+                    i_task = self.task_index[task]
+                    score = 1. * task_rewards[i_task] / task_counts[i_task]
+                    logging.info("[task] %s[%s] %s %s", 
+                            self.subtask_index.get(task.goal[0]),
+                            self.cookbook.index.get(task.goal[1]),
+                            task_probs[i],
+                            score)
+                    scores.append(score)
+                logging.info("")
+                logging.info("[rollout0] %s", [t.a for t in transitions[0]])
+                logging.info("[rollout1] %s", [t.a for t in transitions[1]])
+                logging.info("[rollout2] %s", [t.a for t in transitions[2]])
+                logging.info("[reward] %s", total_reward / count)
+                logging.info("[error] %s", err / N_UPDATE)
+                logging.info("")
+                min_reward = min(min_reward, min(scores))
+
                 # recompute task probs
                 task_probs = np.zeros(len(possible_tasks))
                 for i, task in enumerate(possible_tasks):
@@ -162,20 +185,6 @@ class CurriculumTrainer(object):
                 task_probs = 1 - task_probs
                 task_probs += 0.01
                 task_probs /= task_probs.sum()
-
-                # log
-                logging.info("[tasks] %s", [p[0] for p in  possible_tasks])
-                logging.info("[probs] %s", task_probs)
-                logging.info("")
-                logging.info("[rollout0] %s", [t.a for t in transitions[0]])
-                logging.info("[rollout1] %s", [t.a for t in transitions[1]])
-                logging.info("[rollout2] %s", [t.a for t in transitions[2]])
-                logging.info("[reward] %s", total_reward / count)
-                logging.info("[error] %s", err / N_UPDATE)
-                score_dict = {self.task_index.get(k): 1. * task_rewards[k] / task_counts[k] for k in task_rewards}
-                logging.info("[scores] %s", score_dict)
-                logging.info("")
-                min_reward = min(min_reward, min(score_dict.values()))
 
             logging.info("[min reward] %s", min_reward)
             logging.info("")
