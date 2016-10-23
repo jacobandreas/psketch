@@ -16,6 +16,7 @@ class LightWorld(object):
         self.n_actions = 5
         self.n_features = 12
         self.cookbook = Cookbook(config.recipes)
+        self.random = np.random.RandomState(0)
 
     def sample_scenario_with_goal(self, goal):
         goal = self.cookbook.index.get(goal)
@@ -41,10 +42,10 @@ class LightWorld(object):
             u = min(u, y)
             d = max(d, y)
 
-        l -= np.random.randint(2)
-        r += np.random.randint(2)
-        u -= np.random.randint(2)
-        d += np.random.randint(2)
+        l -= self.random.randint(2)
+        r += self.random.randint(2)
+        u -= self.random.randint(2)
+        d += self.random.randint(2)
 
         rooms_x = r - l + 1
         rooms_y = d - u + 1
@@ -71,11 +72,11 @@ class LightWorld(object):
             cy = ROOM_H * (init_y + py) + ROOM_H / 2             
             wx = cx + ROOM_W / 2 * dx
             wy = cy + ROOM_H / 2 * dy
-            kx = cx + np.random.randint(3) - 1
-            ky = cy + np.random.randint(3) - 1
+            kx = cx + self.random.randint(3) - 1
+            ky = cy + selv.random.randint(3) - 1
             walls[wx, wy] = 0
             doors.append((wx, wy))
-            if np.random.random() < 0.5:
+            if self.random.random() < 0.5:
                 keys[(kx, ky)] = (wx, wy)
             px, py = x, y
 
@@ -83,20 +84,20 @@ class LightWorld(object):
         for i_room in range(min(rooms_x, rooms_y)):
             if rooms_x == 1 or rooms_y == 1:
                 continue
-            px = np.random.randint(rooms_x-1)
-            py = np.random.randint(rooms_y-1)
-            dx, dy = (1, 0) if np.random.randint(2) else (0, 1)
+            px = self.random.randint(rooms_x-1)
+            py = self.random.randint(rooms_y-1)
+            dx, dy = (1, 0) if self.random.randint(2) else (0, 1)
             cx = ROOM_W * px + ROOM_W / 2
             cy = ROOM_H * py + ROOM_H / 2
             wx = cx + ROOM_W / 2 * dx
             wy = cy + ROOM_H / 2 * dy
             if (wx, wy) in doors:
                 continue
-            kx = cx + np.random.randint(3) - 1
-            ky = cy + np.random.randint(3) - 1
+            kx = cx + self.random.randint(3) - 1
+            ky = cy + self.random.randint(3) - 1
             walls[wx, wy] = 0
             doors.append((wx, wy))
-            if np.random.random() < 0.5:
+            if self.random.random() < 0.5:
                 keys[(kx, ky)] = (wx, wy)
 
         # precompute features

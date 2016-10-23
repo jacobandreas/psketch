@@ -4,6 +4,7 @@ from worlds.cookbook import Cookbook
 
 from collections import defaultdict, namedtuple
 import itertools
+import logging
 import numpy as np
 import yaml
 
@@ -79,8 +80,6 @@ class CurriculumTrainer(object):
         while not all(done) and timer > 0:
             mstates_before = model.get_state()
             action, terminate = model.act(states_before)
-            #print states_before[0].pp()
-            #print action[0]
             mstates_after = model.get_state()
             states_after = [None for _ in range(N_BATCH)]
             for i in range(N_BATCH):
@@ -118,8 +117,7 @@ class CurriculumTrainer(object):
 
         task_probs = []
         while True:
-            print "[max steps]", max_steps
-            print
+            logging.info("[max steps] %d", max_steps)
             min_reward = np.inf
 
             # TODO refactor
@@ -166,21 +164,21 @@ class CurriculumTrainer(object):
                 task_probs /= task_probs.sum()
 
                 # log
-                print "[tasks]", [p[0] for p in  possible_tasks]
-                print "[probs]", task_probs
-                print
-                print "[rollout0]", [t.a for t in transitions[0]]
-                print "[rollout1]", [t.a for t in transitions[1]]
-                print "[rollout2]", [t.a for t in transitions[2]]
-                print "[reward]", total_reward / count
-                print "[error]", err / N_UPDATE
+                logging.info("[tasks] %s", [p[0] for p in  possible_tasks])
+                logging.info("[probs] %s", task_probs)
+                logging.info("")
+                logging.info("[rollout0] %s", [t.a for t in transitions[0]])
+                logging.info("[rollout1] %s", [t.a for t in transitions[1]])
+                logging.info("[rollout2] %s", [t.a for t in transitions[2]])
+                logging.info("[reward] %s", total_reward / count)
+                logging.info("[error] %s", err / N_UPDATE)
                 score_dict = {self.task_index.get(k): 1. * task_rewards[k] / task_counts[k] for k in task_rewards}
-                print "[scores]", score_dict
-                print
+                logging.info("[scores] %s", score_dict)
+                logging.info("")
                 min_reward = min(min_reward, min(score_dict.values()))
 
-            print "[min reward]", min_reward
-            print
+            logging.info("[min reward] %s", min_reward)
+            logging.info("")
             if min_reward > self.config.trainer.improvement_threshold:
                 max_steps += 1
                 model.save()

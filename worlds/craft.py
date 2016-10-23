@@ -2,6 +2,7 @@ from cookbook import Cookbook
 from misc import array
 
 import curses
+import logging
 import numpy as np
 from skimage.measure import block_reduce
 import time
@@ -118,7 +119,6 @@ class CraftWorld(object):
         return CraftScenario(grid, init_pos, self)
 
     def visualize(self, transitions):
-        #print [transitions[0].m1] + [t.m2 for t in transitions]
         def _visualize(win):
             curses.start_color()
             for i in range(1, 8):
@@ -254,10 +254,11 @@ class CraftState(object):
                     continue
 
                 if here.sum() > 1:
-                    print here.sum()
-                    print self.grid.sum(axis=2)
-                    print self.grid.sum(axis=0).sum(axis=0)
-                    print cookbook.index.contents
+                    logging.error("impossible world configuration:")
+                    logging.error(here.sum())
+                    logging.error(self.grid.sum(axis=2))
+                    logging.error(self.grid.sum(axis=0).sum(axis=0))
+                    logging.error(cookbook.index.contents)
                 assert here.sum() == 1
                 thing = here.argmax()
 

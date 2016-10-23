@@ -1,9 +1,9 @@
 from misc import util
 import net
-import trpo
 
 from collections import namedtuple, defaultdict
 import numpy as np
+import os
 import tensorflow as tf
 from tensorflow.python.framework.ops import IndexedSlicesValue
 
@@ -26,13 +26,11 @@ ModelState = namedtuple("ModelState", ["action", "arg", "remaining", "task", "st
 
 def increment_sparse_or_dense(into, increment):
     assert isinstance(into, np.ndarray)
-    if isinstance(increment, np.ndarray):
-        into += increment
-    elif isinstance(increment, IndexedSlicesValue):
+    if isinstance(increment, IndexedSlicesValue):
         for i in range(increment.values.shape[0]):
             into[increment.indices[i], :] += increment.values[i, :]
     else:
-        assert False
+        into += increment
 
 class ModularACModel(object):
     def __init__(self, config):
@@ -75,8 +73,9 @@ class ModularACModel(object):
         def build_critic(index, t_input, t_reward, extra_params=[]):
             with tf.variable_scope("critic_%s" % index):
                 if self.config.model.baseline == "task":
-                    t_value = v_value = tf.get_variable("b", shape=(),
+                    t_value = tf.get_variable("b", shape=(),
                             initializer=tf.constant_initializer(0.0))
+                    v_value = [t_value]
                 elif self.config.model.baseline == "state":
                     t_value, v_value = net.mlp(t_input, (1,))
                     t_value = tf.squeeze(t_value)
@@ -182,10 +181,12 @@ class ModularACModel(object):
             self.next_actor_seed += 1
 
     def save(self):
-        self.saver.save(self.session, "saves/modular_ac.chk")
+        self.saver.save(self.session, 
+                os.path.join(self.config.experiment_dir, "modular_ac.chk"))
 
     def load(self):
-        self.saver.restore(self.session, "saves/modular_ac.chk")
+        self.saver.restore(self.session,
+                os.path.join(self.config.experiment_dir, "modular_ac.chk"))
 
     def experience(self, episode):
         running_reward = 0
