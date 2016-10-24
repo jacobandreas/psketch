@@ -1,4 +1,4 @@
-BRANCH="exp/craft_modular_state-baseline"
+BRANCH="ec2-test"
 
 exec >STDOUT 2>STDERR
 

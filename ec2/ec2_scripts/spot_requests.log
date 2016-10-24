@@ -1,0 +1,35 @@
+SPOTINSTANCEREQUESTS	2016-10-24T21:03:39.000Z	Linux/UNIX	sir-3cng79kk	0.200000	open	one-time
+LAUNCHSPECIFICATION	ami-cf4110aa	c4.2xlarge	jda
+MONITORING	False
+NETWORKINTERFACES	True	0	subnet-1791cd60
+PLACEMENT	us-east-1c
+SECURITYGROUPS	default
+STATUS	pending-evaluation	Your Spot request has been submitted for review, and is pending evaluation.	2016-10-24T21:03:39.000Z
+SPOTINSTANCEREQUESTS	2016-10-24T21:05:40.000Z	Linux/UNIX	sir-g91i6rgj	0.200000	open	one-time
+LAUNCHSPECIFICATION	ami-cf4110aa	c4.2xlarge	jda-craft
+MONITORING	False
+NETWORKINTERFACES	True	0	subnet-1791cd60
+PLACEMENT	us-east-1c
+SECURITYGROUPS	default
+STATUS	pending-evaluation	Your Spot request has been submitted for review, and is pending evaluation.	2016-10-24T21:05:40.000Z
+SPOTINSTANCEREQUESTS	2016-10-24T21:12:59.000Z	Linux/UNIX	sir-f6sg4mvg	0.200000	open	one-time
+LAUNCHSPECIFICATION	ami-f22975e5	c4.2xlarge	jda-craft
+MONITORING	False
+NETWORKINTERFACES	True	0	subnet-1791cd60
+PLACEMENT	us-east-1c
+SECURITYGROUPS	default
+STATUS	pending-evaluation	Your Spot request has been submitted for review, and is pending evaluation.	2016-10-24T21:12:59.000Z
+SPOTINSTANCEREQUESTS	2016-10-24T21:20:28.000Z	Linux/UNIX	sir-5h2g5y2g	0.200000	open	one-time
+LAUNCHSPECIFICATION	ami-3d5c002a	c4.2xlarge	jda-craft
+MONITORING	False
+NETWORKINTERFACES	True	0	subnet-1791cd60
+PLACEMENT	us-east-1c
+SECURITYGROUPS	default
+STATUS	pending-evaluation	Your Spot request has been submitted for review, and is pending evaluation.	2016-10-24T21:20:28.000Z
+SPOTINSTANCEREQUESTS	2016-10-24T21:27:20.000Z	Linux/UNIX	sir-xh5i6njk	0.200000	open	one-time
+LAUNCHSPECIFICATION	ami-3d5c002a	c4.2xlarge	jda-craft
+MONITORING	False
+NETWORKINTERFACES	True	0	subnet-1791cd60
+PLACEMENT	us-east-1c
+SECURITYGROUPS	default
+STATUS	pending-evaluation	Your Spot request has been submitted for review, and is pending evaluation.	2016-10-24T21:27:20.000Z

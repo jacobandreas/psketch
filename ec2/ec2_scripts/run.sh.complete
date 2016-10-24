@@ -1,0 +1,17 @@
+#!/bin/sh
+
+export PATH="/home/ubuntu/anaconda2/bin:$PATH"
+cd /home/ubuntu
+BRANCH="ec2-test"
+
+exec >STDOUT 2>STDERR
+
+ssh-keyscan github.com >>/home/ubuntu/.ssh/known_hosts
+su ubuntu -c "git clone git@github.com:jacobandreas/craft.git"
+cd craft
+git checkout $BRANCH
+python main.py
+git add -A
+git commit -m "add experiments"
+git push
+#sudo shutdown -h now

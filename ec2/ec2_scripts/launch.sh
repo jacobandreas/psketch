@@ -20,8 +20,8 @@ elif [ "$zone" = "us-east-1e" ]; then
   subnet="subnet-f69d06dd"
 fi
 
-image="ami-cf4110aa"
-key="jda"
+image="ami-3d5c002a"
+key="jda-craft"
 security_group="sg-1e3dfc78"
 
 if [ "$request" = "instance" ]; then
