@@ -8,8 +8,10 @@ import logging
 import numpy as np
 import yaml
 
-N_ITERS = 1000000
-N_UPDATE = 500
+#N_ITERS = 3000000
+N_ITERS = 200
+#N_UPDATE = 500
+N_UPDATE = 1
 N_BATCH = 100
 IMPROVEMENT_THRESHOLD = 0.8
 
@@ -117,7 +119,7 @@ class CurriculumTrainer(object):
         i_iter = 0
 
         task_probs = []
-        while True:
+        while i_iter < N_ITERS:
             logging.info("[max steps] %d", max_steps)
             min_reward = np.inf
 

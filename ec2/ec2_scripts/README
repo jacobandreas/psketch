@@ -1,0 +1,92 @@
+== Setting up ==
+
+1. Install the Amazon Web Services Command Line Interface (run on the command line):
+
+curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
+unzip awscli-bundle.zip
+sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+
+More info at: http://docs.aws.amazon.com/cli/latest/userguide/installing.html
+
+2. Set up SSH keys etc:
+
+- Go to: https://console.aws.amazon.com/iam/home?#users
+- Sign in with klein@cs.berkeley.edu and the usual password
+- Click 'Create New Users'
+- Choose a name, click create in the bottom right hand corner
+- Click 'Show User Security Credentials'
+- Note the "Access Key ID" and "Secret Access Key"
+- Click 'Download Credentials' and save them (otherwise they will not be accessible after this)
+- Go to https://console.aws.amazon.com/iam/home?region=us-east-1#users
+- Select your username
+- Under 'Permissions' click 'Attach Policy'
+- Select 'jkkEC2onCLI' and click 'Attach Policy'
+
+More info at: http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-set-up.html
+
+3. Configure the AWS CLI (run on the command line):
+
+aws configure
+AWS Access Key ID [None]: <from above>
+AWS Secret Access Key [None]: <from above>
+Default region name [None]: us-east-1
+Default output format [None]: text
+
+More info at: http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
+
+4. Create a key pair:
+
+- Go to: https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#KeyPairs:sort=keyName
+- Click 'Create Key Pair'
+- Set the name, NOTE: This must be the same as your user name (from above)
+- Save the key
+
+5. Create your image:
+
+- Go to: https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:sort=instanceType
+- Launch instance, probably Ubuntu Server 14.04 LTS (HVM), SSD Volume Type - ami-d05e75b8
+- Select instance type m4.large
+- Select Network 'vpc-.... | simple-vpc'
+- Set "Auto-assign Public IP" to "Enable"
+- For the Add Storage page, set the amount of disk space you will need for code, data, etc
+- For the Configure Security Group page, choose existing security group, and go with 'simple-sg'
+- Launch, choosing your key pair from the list
+- Wait for the instance to launch
+- SSH in to the instance:
+ssh -i YOUR_KEY ubuntu@IP_ADDRESS_FROM_INSTANCE_LIST_ONLINE
+- Install stuff, copy in data, set up the versions of java and scala you want, etc
+- On the instance, create an ssh key pair with:
+ssh-keygen -t rsa -b 4096
+- Authorize the key for zen with:
+ssh-copy-id USERNAME@zen.millennium.berkeley.edu
+or by copying it into ~/.ssh/authorized_keys on zen
+- Go to: https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:sort=instanceType
+- Select your instance
+- Click Actions -> Image -> Create Image
+- Choose a name, amount of disk space
+- Wait for the image to be created
+- Go to: https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:sort=desc:creationDate
+- Note the AMI ID for your image
+
+6. Set params in launch.sh (specifically, image and key)
+
+7. Edit template_top.sh and template_bottom.sh to suit your needs (e.g. copy in a jar from zen, set the location of java, etc)
+
+== Example commands ==
+
+./launch.sh [spot | instance] <instance type> <zone> [<price>] <script files>
+  spot | instance - refers to whether this should be launched via spot bidding or not.
+  instance type - m4.large, r3.xlarge, etc
+  zone - us-east-1[abcd], you can use any you like for 'instance', but for 'spot' what you choose will determine who you are bidding against
+  price - only used by 'spot', typically I look at prices over the last week on https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#SpotInstances:sort=desc:state and choose a low price zone, and a price that will handle brief spikes
+  script files - a list of filenames containing the scripts you want to run
+
+./kill.sh <ips>
+  For each IP it connects, then shuts down the machine (useful if you realise something is broken and just want to kill a bunch of things)
+
+./check_up.sh
+  For each of our currently running instances it does whatever you want (currently set to copy back some files, though you'll need to edit it to have your key)
+
+aws ec2 describe-instances --profile <your username>
+  Tells you information about the instances you have running
+
