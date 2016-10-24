@@ -40,3 +40,10 @@ NETWORKINTERFACES	True	0	subnet-1791cd60
 PLACEMENT	us-east-1c
 SECURITYGROUPS	default
 STATUS	pending-evaluation	Your Spot request has been submitted for review, and is pending evaluation.	2016-10-24T21:41:02.000Z
+SPOTINSTANCEREQUESTS	2016-10-24T21:51:32.000Z	Linux/UNIX	sir-hcc87pfj	0.200000	open	one-time
+LAUNCHSPECIFICATION	ami-3d5c002a	c4.2xlarge	jda-craft
+MONITORING	False
+NETWORKINTERFACES	True	0	subnet-1791cd60
+PLACEMENT	us-east-1c
+SECURITYGROUPS	default
+STATUS	pending-evaluation	Your Spot request has been submitted for review, and is pending evaluation.	2016-10-24T21:51:32.000Z
