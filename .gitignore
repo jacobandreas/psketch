@@ -1,7 +1,3 @@
 *.pyc
-*.log
 *.swp
-*.chk
-*.chk.meta
-checkpoint
 *.lprof
