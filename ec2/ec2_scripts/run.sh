@@ -9,4 +9,4 @@ git checkout $BRANCH
 python main.py
 git add -A
 git commit -m "add experiments"
-git push
+su ubuntu -c "git push"

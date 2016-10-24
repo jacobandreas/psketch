@@ -1,7 +1,10 @@
 #!/bin/sh
 
+su ubuntu
 export PATH="/home/ubuntu/anaconda2/bin:$PATH"
 cd /home/ubuntu
+
+# --- BEGIN ---
 BRANCH="ec2-test"
 
 exec >STDOUT 2>STDERR
@@ -14,4 +17,6 @@ python main.py
 git add -A
 git commit -m "add experiments"
 git push
+# --- END ---
+
 #sudo shutdown -h now
