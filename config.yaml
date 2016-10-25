@@ -1,4 +1,4 @@
-name: craft_modular_state-baseline
+name: craft_modular_common-baseline
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
@@ -6,7 +6,7 @@ model:
   name: ModularACModel
   use_args: false
   max_subtask_timesteps: 15
-  baseline: state
+  baseline: common
 trainer: 
   name: CurriculumTrainer
   improvement_threshold: 0.8
