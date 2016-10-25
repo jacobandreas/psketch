@@ -1,7 +1,7 @@
 name: light_modular
 recipes: "resources/light/recipes.yaml"
 world: 
-  name: CraftWorld
+  name: LightWorld
 model: 
   name: ModularACModel
   use_args: false
