@@ -1,0 +1,1 @@
+./launch.sh spot c4.2xlarge us-east-1c 0.2 run.sh
