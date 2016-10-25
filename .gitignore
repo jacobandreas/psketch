@@ -2,3 +2,6 @@
 *.swp
 *.lprof
 *.pem
+job_log.txt
+spot_requests.log
+run.sh.complete

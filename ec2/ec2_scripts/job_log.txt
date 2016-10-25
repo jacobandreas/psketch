@@ -1,9 +1,0 @@
-Started run.sh -- c4.2xlarge ami-cf4110aa us-east-1a 0.2
-Started run.sh -- c4.2xlarge ami-cf4110aa us-east-1c 0.2
-Started run.sh -- c4.2xlarge ami-cf4110aa us-east-1c 0.2
-Started run.sh -- c4.2xlarge ami-f22975e5 us-east-1c 0.2
-Started run.sh -- c4.2xlarge ami-3d5c002a us-east-1c 0.2
-Started run.sh -- c4.2xlarge ami-3d5c002a us-east-1c 0.2
-Started run.sh -- c4.2xlarge ami-3d5c002a us-east-1c 0.2
-Started run.sh -- c4.2xlarge ami-3d5c002a us-east-1c 0.2
-Started run.sh -- c4.2xlarge ami-3d5c002a us-east-1c 0.2
