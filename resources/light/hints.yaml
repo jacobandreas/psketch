@@ -1,17 +1,29 @@
-#"go[L]":
-#  ["left"]
+"go[LL]":
+  ["left", "left"]
 
 "go[LD]":
   ["left", "down"]
 
-"go[RR]":
-  ["right", "right"]
+"go[RD]":
+  ["right", "down"]
+
+"go[UL]":
+  ["up", "left"]
 
 "go[UR]":
   ["up", "right"]
 
-"go[RUL]":
-  ["right", "up", "left"]
+"go[URU]":
+  ["up", "right", "up"]
 
-"go[RDDL]":
-  ["right", "down", "down", "left"]
+"go[DRU]":
+  ["down", "right", "up"]
+
+"go[LLD]":
+  ["left", "left", "down"]
+
+"go[RDD]":
+  ["right", "down", "down"]
+
+"go[LUR]":
+  ["left", "up", "right"]

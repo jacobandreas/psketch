@@ -1,10 +1,22 @@
 environment:
-  - L
+  - LL
+  - LU
   - LD
   - RR
+  - RU
+  - RD
+  - UL
   - UR
-  - RUL
-  - RDDL
+  - UU
+  - DL
+  - DR
+  - DD
+
+  - URU
+  - DRU
+  - LLD
+  - RDD
+  - LUR
 
 primitives: {}
 recipes: {}
