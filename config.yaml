@@ -9,7 +9,7 @@ model:
   baseline: state
 trainer: 
   name: CurriculumTrainer
-  use_curriculum: false
+  use_curriculum: true
   improvement_threshold: 0.8
   hints: "resources/light/hints.yaml"
   max_timesteps: 100

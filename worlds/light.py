@@ -73,10 +73,10 @@ class LightWorld(object):
             wx = cx + ROOM_W / 2 * dx
             wy = cy + ROOM_H / 2 * dy
             kx = cx + self.random.randint(3) - 1
-            ky = cy + selv.random.randint(3) - 1
+            ky = cy + self.random.randint(3) - 1
             walls[wx, wy] = 0
             doors.append((wx, wy))
-            if self.random.random() < 0.5:
+            if self.random.rand() < 0.5:
                 keys[(kx, ky)] = (wx, wy)
             px, py = x, y
 
@@ -97,7 +97,7 @@ class LightWorld(object):
             ky = cy + self.random.randint(3) - 1
             walls[wx, wy] = 0
             doors.append((wx, wy))
-            if self.random.random() < 0.5:
+            if self.random.rand() < 0.5:
                 keys[(kx, ky)] = (wx, wy)
 
         # precompute features
