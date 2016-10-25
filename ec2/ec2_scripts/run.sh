@@ -1,4 +1,4 @@
-BRANCH="exp/craft_modular_no-curriculum"
+BRANCH="exp/light_modular"
 
 exec >STDOUT 2>STDERR
 
