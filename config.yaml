@@ -1,4 +1,4 @@
-name: craft_modular_state-baseline
+name: craft_modular_no-curriculum
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
@@ -9,6 +9,7 @@ model:
   baseline: state
 trainer: 
   name: CurriculumTrainer
+  use_curriculum: false
   improvement_threshold: 0.8
   hints: "resources/craft/hints.yaml"
   max_timesteps: 100

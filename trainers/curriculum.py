@@ -113,7 +113,10 @@ class CurriculumTrainer(object):
         model.prepare(world, self)
         #model.load()
         subtasks = self.tasks_by_subtask.keys()
-        max_steps = 1
+        if self.config.trainer.use_curriculum:
+            max_steps = 1
+        else:
+            max_steps = 100
         i_iter = 0
 
         task_probs = []
@@ -178,13 +181,14 @@ class CurriculumTrainer(object):
                 min_reward = min(min_reward, min(scores))
 
                 # recompute task probs
-                task_probs = np.zeros(len(possible_tasks))
-                for i, task in enumerate(possible_tasks):
-                    i_task = self.task_index[task]
-                    task_probs[i] = 1. * task_rewards[i_task] / task_counts[i_task]
-                task_probs = 1 - task_probs
-                task_probs += 0.01
-                task_probs /= task_probs.sum()
+                if self.config.trainer.use_curriculum:
+                    task_probs = np.zeros(len(possible_tasks))
+                    for i, task in enumerate(possible_tasks):
+                        i_task = self.task_index[task]
+                        task_probs[i] = 1. * task_rewards[i_task] / task_counts[i_task]
+                    task_probs = 1 - task_probs
+                    task_probs += 0.01
+                    task_probs /= task_probs.sum()
 
             logging.info("[min reward] %s", min_reward)
             logging.info("")
