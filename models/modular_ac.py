@@ -73,11 +73,11 @@ class ModularACModel(object):
 
         def build_critic(index, t_input, t_reward, extra_params=[]):
             with tf.variable_scope("critic_%s" % index):
-                if self.config.model.baseline == "task":
+                if self.config.model.baseline in ("task", "common"):
                     t_value = tf.get_variable("b", shape=(),
                             initializer=tf.constant_initializer(0.0))
                     v_value = [t_value]
-                elif self.config.model.baseline in ("state", "common"):
+                elif self.config.model.baseline == "state":
                     t_value, v_value = net.mlp(t_input, (1,))
                     t_value = tf.squeeze(t_value)
                 else:
