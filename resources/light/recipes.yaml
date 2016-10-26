@@ -1,4 +1,6 @@
-environment:
+environment: {}
+
+primitives:
   - LL
   - LU
   - LD
@@ -18,5 +20,4 @@ environment:
   - RDD
   - LUR
 
-primitives: {}
 recipes: {}

@@ -38,7 +38,8 @@ class KeyboardModel(object):
         print states[0].pp()
         k = raw_input("action: ")
         action = int(k)
-        return [action] * len(states), [False] * len(states)
+        terminate = action >= self.world.n_actions
+        return [action] * len(states), [terminate] * len(states)
 
     def get_state(self):
         return [None] * self.n_tasks
