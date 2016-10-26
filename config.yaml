@@ -1,10 +1,10 @@
-name: light_indep
+name: light_joint
 recipes: "resources/light/recipes.yaml"
 world: 
   name: LightWorld
 model: 
   name: ModularACModel
-  use_args: false
+  use_args: true
   max_subtask_timesteps: 100
   baseline: state
 trainer: 
