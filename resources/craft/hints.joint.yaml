@@ -1,26 +1,29 @@
 "make[plank]":
-  ["do[plank]", "do[plank]"]
+  ["do[plank]"]
 
 "make[stick]":
-  ["do[stick]", "do[stick]"]
+  ["do[stick]"]
 
 "make[cloth]":
-  ["do[cloth]", "do[cloth]"]
+  ["do[cloth]"]
 
 "make[rope]":
-  ["do[rope]", "do[rope]"]
+  ["do[rope]"]
 
 "make[bridge]":
-  ["do[bridge]", "do[bridge]", "do[bridge]"]
+  ["do[bridge]"]
 
 "make[bed]":
-  ["do[bed]", "do[bed]", "do[bed]", "do[bed]"]
+  ["do[bed]"]
 
 "make[axe]":
-  ["do[axe]", "do[axe]", "do[axe]", "do[axe]"]
+  ["do[axe]"]
 
 "make[shears]":
-  ["do[shears]", "do[shears]", "do[shears]", "do[shears]"]
+  ["do[shears]"]
 
 "get[gold]":
-  ["do[gold]", "do[gold]", "do[gold]", "do[gold]"]
+  ["do[gold]"]
+
+"get[gem]":
+  ["do[gem]"]
