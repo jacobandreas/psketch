@@ -1,0 +1,29 @@
+"go[LL]":
+  ["left_left"]
+
+"go[LD]":
+  ["left_down"]
+
+"go[RD]":
+  ["right_down"]
+
+"go[UL]":
+  ["up_left"]
+
+"go[UR]":
+  ["up_right"]
+
+"go[URU]":
+  ["up_right_up"]
+
+"go[DRU]":
+  ["down_right_up"]
+
+"go[LLD]":
+  ["left_left_down"]
+
+"go[RDD]":
+  ["right_down_down"]
+
+"go[LUR]":
+  ["left_up_right"]
