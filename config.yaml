@@ -4,7 +4,7 @@ world:
   name: CraftWorld
 model: 
   name: ModularACModel
-  use_args: false
+  use_args: true
   max_subtask_timesteps: 100
   baseline: state
 trainer: 
