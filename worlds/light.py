@@ -8,8 +8,8 @@ LEFT = 2
 RIGHT = 3
 USE = 4
 
-ROOM_W = 4
-ROOM_H = 4
+ROOM_W = 6
+ROOM_H = 6
 
 class LightWorld(object):
     def __init__(self, config):
@@ -72,8 +72,8 @@ class LightWorld(object):
             cy = ROOM_H * (init_y + py) + ROOM_H / 2             
             wx = cx + ROOM_W / 2 * dx
             wy = cy + ROOM_H / 2 * dy
-            kx = cx + self.random.randint(3) - 1
-            ky = cy + self.random.randint(3) - 1
+            kx = cx + self.random.randint(ROOM_W / 2 + 1) - 1
+            ky = cy + self.random.randint(ROOM_H / 2 + 1) - 1
             walls[wx, wy] = 0
             doors.append((wx, wy))
             if self.random.rand() < 0.5:
@@ -93,8 +93,8 @@ class LightWorld(object):
             wy = cy + ROOM_H / 2 * dy
             if (wx, wy) in doors:
                 continue
-            kx = cx + self.random.randint(3) - 1
-            ky = cy + self.random.randint(3) - 1
+            kx = cx + self.random.randint(ROOM_W / 2 + 1) - 1
+            ky = cy + self.random.randint(ROOM_H / 2 + 1) - 1
             walls[wx, wy] = 0
             doors.append((wx, wy))
             if self.random.rand() < 0.5:
@@ -106,7 +106,17 @@ class LightWorld(object):
         key_features = {k: np.zeros((board_w, board_h, 4)) for k in keys}
         for x in range(board_w):
             for y in range(board_h):
+                rx = x / ROOM_W
+                ry = y / ROOM_H
                 for dx, dy in doors:
+                    #if dx / ROOM_W != rx or dy / ROOM_H != ry:
+                    #    continue
+                    if rx not in ((dx + 1) / ROOM_W, (dx - 1) / ROOM_W):
+                        continue
+                    if ry not in ((dy + 1) / ROOM_H, (dy - 1) / ROOM_H):
+                        continue
+                    if (x, y) != (dx, dy) and (x % ROOM_W == 0 or y % ROOM_H == 0):
+                        continue
                     strength = 10 - np.sqrt(np.square((x - dx, y - dy)).sum())
                     strength = max(strength, 0)
                     strength /= 10
@@ -119,6 +129,10 @@ class LightWorld(object):
                     if dy >= y:
                         door_features[dx, dy][x, y, 3] += strength
                 for kx, ky in keys:
+                    if kx / ROOM_W != rx or ky / ROOM_H != ry:
+                        continue
+                    if x % ROOM_W == 0 or y % ROOM_H == 0:
+                        continue
                     strength = 10 - np.sqrt(np.square((x - kx, y - ky)).sum())
                     strength = max(strength, 0)
                     strength /= 10
@@ -131,6 +145,15 @@ class LightWorld(object):
                     if ky >= y:
                         key_features[kx, ky][x, y, 3] += strength
 
+        #np.set_printoptions(precision=1)
+        #print keys
+        #print doors
+        #print walls
+        #print key_features[keys.keys()[0]][..., 0]
+        #print key_features[keys.keys()[0]][..., 1]
+        #print door_features[doors[0]][..., 0]
+        #print door_features[doors[1]][..., 1]
+        #exit()
         init_room = (init_x, init_y)
         gx, gy = list(walk())[-1]
         goal_room = (init_x + gx, init_y + gy)
