@@ -1,7 +1,7 @@
-name: light_indep
-recipes: "resources/light/recipes.yaml"
+name: craft_indep
+recipes: "resources/craft/recipes.yaml"
 world: 
-  name: LightWorld
+  name: CraftWorld
 model: 
   name: ModularACModel
   use_args: false
@@ -11,5 +11,5 @@ trainer:
   name: CurriculumTrainer
   use_curriculum: true
   improvement_threshold: 0.8
-  hints: "resources/light/hints.indep.yaml"
+  hints: "resources/craft/hints.indep.yaml"
   max_timesteps: 100
