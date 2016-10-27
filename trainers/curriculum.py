@@ -11,6 +11,7 @@ import yaml
 N_ITERS = 3000000
 N_UPDATE = 500
 N_BATCH = 100
+N_TEST_BATCHES = 100
 IMPROVEMENT_THRESHOLD = 0.8
 
 Task = namedtuple("Task", ["goal", "steps"])
@@ -29,9 +30,17 @@ class CurriculumTrainer(object):
         self.random = np.random.RandomState(0)
 
         # organize task and subtask indices
-        self.tasks_by_subtask = defaultdict(list)
-        self.tasks = []
-        for hint_key, hint in self.hints.items():
+        self.train_tasks = []
+        self.test_tasks = []
+        if "train" in self.hints:
+            train_hints = self.hints["train"]
+            test_hints = self.hints["test"]
+        else:
+            train_hints = self.hints
+            test_hints = {}
+        all_hints = dict(train_hints)
+        all_hints.update(test_hints)
+        for hint_key, hint in all_hints.items():
             goal = util.parse_fexp(hint_key)
             goal = (self.subtask_index.index(goal[0]), self.cookbook.index[goal[1]])
             if config.model.use_args:
@@ -40,15 +49,14 @@ class CurriculumTrainer(object):
                         for a, b in steps]
                 steps = tuple(steps)
                 task = Task(goal, steps)
-                for subtask, _ in steps:
-                    self.tasks_by_subtask[subtask].append(task)
             else:
                 steps = [self.subtask_index.index(a) for a in hint]
                 steps = tuple(steps)
                 task = Task(goal, steps)
-                for subtask in steps:
-                    self.tasks_by_subtask[subtask].append(task)
-            self.tasks.append(task)
+            if hint_key in train_hints:
+                self.train_tasks.append(task)
+            else:
+                self.test_tasks.append(task)
             self.task_index.index(task)
 
     def do_rollout(self, model, world, possible_tasks, task_probs):
@@ -109,10 +117,32 @@ class CurriculumTrainer(object):
 
         return transitions, total_reward / N_BATCH
 
+    def test(self, model, world):
+        possible_tasks = self.test_tasks
+        task_probs = np.ones(len(possible_tasks)) / len(possible_tasks)
+        task_rewards = defaultdict(lambda: 0)
+        task_counts = defaultdict(lambda: 0)
+        for i in range(N_TEST_BATCHES):
+            transitions, reward = self.do_rollout(model, world, possible_tasks,
+                    task_probs)
+            for t in transitions:
+                tr = sum(tt.r for tt in t)
+                task_rewards[t[0].m1.task] += tr
+                task_counts[t[0].m1.task] += 1
+
+        logging.info("[TEST]")
+        for i, task in enumerate(possible_tasks):
+            i_task = self.task_index[task]
+            score = 1. * task_rewards[i_task] / task_counts[i_task]
+            logging.info("[task] %s[%s] %s %s", 
+                    self.subtask_index.get(task.goal[0]),
+                    self.cookbook.index.get(task.goal[1]),
+                    task_probs[i],
+                    score)
+
     def train(self, model, world):
         model.prepare(world, self)
         #model.load()
-        subtasks = self.tasks_by_subtask.keys()
         if self.config.trainer.use_curriculum:
             max_steps = 1
         else:
@@ -127,7 +157,7 @@ class CurriculumTrainer(object):
             # TODO refactor
             for _ in range(1):
                 # make sure there's something of this length
-                possible_tasks = self.tasks
+                possible_tasks = self.train_tasks
                 possible_tasks = [t for t in possible_tasks if len(t.steps) <= max_steps]
                 if len(possible_tasks) == 0:
                     continue

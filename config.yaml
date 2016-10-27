@@ -1,4 +1,4 @@
-name: craft_joint
+name: craft_holdout
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
@@ -11,5 +11,5 @@ trainer:
   name: CurriculumTrainer
   use_curriculum: true
   improvement_threshold: 0.8
-  hints: "resources/craft/hints.joint.yaml"
+  hints: "resources/craft/hints.holdout.yaml"
   max_timesteps: 100

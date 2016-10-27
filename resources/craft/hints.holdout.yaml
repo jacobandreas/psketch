@@ -1,0 +1,31 @@
+train:
+  "make[plank]":
+    ["get_wood", "make0"]
+
+  "make[stick]":
+    ["get_wood", "make1"]
+  
+  "make[cloth]":
+    ["get_grass", "make2"]
+  
+  "make[rope]":
+    ["get_grass", "make0"]
+  
+  "make[bridge]":
+    ["get_iron", "get_wood", "make2"]
+  
+  "make[shears]":
+    ["get_wood", "make1", "get_iron", "make1"]
+  
+  "get[gold]":
+    ["get_iron", "get_wood", "make2", "get_gold"]
+  
+  "get[gem]":
+    ["get_wood", "make1", "get_iron", "make0", "get_gem"]
+
+test:
+  "make[bed]":
+    ["get_wood", "make0", "get_grass", "make1"]
+  
+  "make[axe]":
+    ["get_wood", "make1", "get_iron", "make0"]

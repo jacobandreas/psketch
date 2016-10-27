@@ -20,6 +20,7 @@ def main():
     model = models.load(config)
     trainer = trainers.load(config)
     trainer.train(model, world)
+    trainer.test(model, world)
 
 def configure():
     # load config
