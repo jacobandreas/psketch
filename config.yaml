@@ -4,8 +4,8 @@ world:
   name: CraftWorld
 model: 
   name: ModularACModel
-  use_args: true
-  max_subtask_timesteps: 100
+  use_args: false
+  max_subtask_timesteps: 15
   baseline: state
 trainer: 
   name: CurriculumTrainer
