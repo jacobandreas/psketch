@@ -1,4 +1,4 @@
-name: craft_modular_no-curriculum
+name: craft_modular_no-curriculum-weighting
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
