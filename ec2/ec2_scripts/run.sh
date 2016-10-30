@@ -1,4 +1,4 @@
-BRANCH="exp/craft_modular_no-curriculum"
+BRANCH="exp/craft_modular_no-curriculum-weighting"
 
 exec >STDOUT 2>STDERR
 
