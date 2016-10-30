@@ -1,0 +1,29 @@
+"make[plank]":
+  ["do[wood]", "do[plank]"]
+
+"make[stick]":
+  ["do[wood]", "do[stick]"]
+
+"make[cloth]":
+  ["do[grass]", "do[cloth]"]
+
+"make[rope]":
+  ["do[grass]", "do[plank]"]
+
+"make[bridge]":
+  ["do[iron]", "do[wood]", "do[cloth]"]
+
+"make[bed]":
+  ["do[wood]", "do[plank]", "do[grass]", "do[stick]"]
+
+"make[axe]":
+  ["do[wood]", "do[stick]", "do[iron]", "do[plank]"]
+
+"make[shears]":
+  ["do[wood]", "do[stick]", "do[iron]", "do[stick]"]
+
+"get[gold]":
+  ["do[iron]", "do[wood]", "do[cloth]", "do[gold]"]
+
+"get[gem]":
+  ["do[wood]", "do[stick]", "do[iron]", "do[plank]", "do[gem]"]
