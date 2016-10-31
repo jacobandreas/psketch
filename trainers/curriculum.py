@@ -9,7 +9,7 @@ import numpy as np
 import yaml
 
 N_ITERS = 3000000
-N_UPDATE = 500
+N_UPDATE = 10
 N_BATCH = 100
 N_TEST_BATCHES = 100
 IMPROVEMENT_THRESHOLD = 0.8
@@ -142,6 +142,7 @@ class CurriculumTrainer(object):
 
     def train(self, model, world):
         model.prepare(world, self)
+        return
         #model.load()
         if self.config.trainer.use_curriculum:
             max_steps = 1
@@ -225,3 +226,67 @@ class CurriculumTrainer(object):
             if min_reward > self.config.trainer.improvement_threshold:
                 max_steps += 1
                 model.save()
+
+    def transfer(self, model, world):
+        model.prepare(world, self)
+        #model.load()
+        i_iter = 0
+
+        task_probs = []
+        while i_iter < N_ITERS:
+            min_reward = np.inf
+
+            # TODO refactor
+            for _ in range(1):
+                possible_tasks = self.test_tasks
+
+                # re-initialize task probs if necessary
+                if len(task_probs) != len(possible_tasks):
+                    task_probs = np.ones(len(possible_tasks)) / len(possible_tasks)
+
+                total_reward = 0.
+                total_err = 0.
+                count = 0.
+                task_rewards = defaultdict(lambda: 0)
+                task_counts = defaultdict(lambda: 0)
+                for j in range(N_UPDATE):
+                    err = None
+                    # get enough samples for one training step
+                    while err is None:
+                        i_iter += N_BATCH
+                        transitions, reward = self.do_rollout(model, world, 
+                                possible_tasks, task_probs)
+                        for t in transitions:
+                            tr = sum(tt.r for tt in t)
+                            task_rewards[t[0].m1.task] += tr
+                            task_counts[t[0].m1.task] += 1
+                        total_reward += reward
+                        count += 1
+                        for t in transitions:
+                            model.experience(t)
+                        err = model.train()
+                    total_err += err
+
+                # log
+                logging.info("[step] %d", i_iter)
+                scores = []
+                for i, task in enumerate(possible_tasks):
+                    i_task = self.task_index[task]
+                    score = 1. * task_rewards[i_task] / task_counts[i_task]
+                    logging.info("[task] %s[%s] %s %s", 
+                            self.subtask_index.get(task.goal[0]),
+                            self.cookbook.index.get(task.goal[1]),
+                            task_probs[i],
+                            score)
+                    scores.append(score)
+                logging.info("")
+                logging.info("[rollout0] %s", [t.a for t in transitions[0]])
+                logging.info("[rollout1] %s", [t.a for t in transitions[1]])
+                logging.info("[rollout2] %s", [t.a for t in transitions[2]])
+                logging.info("[reward] %s", total_reward / count)
+                logging.info("[error] %s", err / N_UPDATE)
+                logging.info("")
+                min_reward = min(min_reward, min(scores))
+
+            logging.info("[min reward] %s", min_reward)
+            logging.info("")
