@@ -1,5 +1,6 @@
 from misc import util
 import net
+from reflex_meta import ReflexMetaModel
 
 from collections import namedtuple, defaultdict
 import logging
@@ -33,7 +34,7 @@ def increment_sparse_or_dense(into, increment):
     else:
         into += increment
 
-class ModularACModel(object):
+class ModularACInteractiveModel(object):
     def __init__(self, config):
         self.experiences = []
         self.world = None
@@ -44,17 +45,19 @@ class ModularACModel(object):
     def prepare(self, world, trainer):
         assert self.world is None
         self.world = world
+        #self.meta = meta
+        self.meta = ReflexMetaModel(trainer.subtask_index)
         self.trainer = trainer
 
         self.n_tasks = len(trainer.task_index)
         self.n_modules = len(trainer.subtask_index)
 
-        #self.n_actions = world.n_actions + 1
-        self.n_actions = world.n_actions
+        self.n_actions = world.n_actions + 1
         self.t_n_steps = tf.Variable(1., name="n_steps")
         self.t_inc_steps = self.t_n_steps.assign(self.t_n_steps + 1)
         # TODO configurable optimizer
         self.optimizer = tf.train.RMSPropOptimizer(0.001)
+
 
         def build_actor(index, t_input, t_action_mask, extra_params=[]):
             with tf.variable_scope("actor_%s" % index):
@@ -167,22 +170,18 @@ class ModularACModel(object):
         self.critic_trainers = critic_trainers
         self.inputs = InputBundle(t_arg, t_step, t_feats, t_action_mask, t_reward)
 
+        self.saver.restore(self.session, "experiments/craft_holdout/modular_ac.chk")
+
     def init(self, states, tasks):
         n_act_batch = len(states)
-        self.subtasks = []
-        self.args = []
+
+        self.subtask, self.arg = zip(*self.meta.act(states))
+        self.subtask = list(self.subtask)
+        self.arg = list(self.arg)
         self.i_task = []
         for i in range(n_act_batch):
-            if self.config.model.use_args:
-                subtasks, args = zip(*tasks[i].steps)
-            else:
-                subtasks = tasks[i].steps
-                args = [None] * len(subtasks)
-            self.subtasks.append(tuple(subtasks))
-            self.args.append(tuple(args))
             self.i_task.append(self.trainer.task_index[tasks[i]])
-        self.i_subtask = [0 for _ in range(n_act_batch)]
-        self.i_step = np.zeros((n_act_batch, 1))
+
         self.randoms = []
         for _ in range(n_act_batch):
             self.randoms.append(np.random.RandomState(self.next_actor_seed))
@@ -206,23 +205,21 @@ class ModularACModel(object):
                 self.experiences.append(n_transition)
 
     def act(self, states):
+        n_subtasks, n_args = zip(*self.meta.act(states))
+
         mstates = self.get_state()
-        self.i_step += 1
         by_mod = defaultdict(list)
-        n_act_batch = len(self.i_subtask)
+        n_act_batch = len(self.subtask)
 
         for i in range(n_act_batch):
-            by_mod[self.i_task[i], self.i_subtask[i]].append(i)
+            by_mod[self.i_task[i], self.subtask[i]].append(i)
 
         action = [None] * n_act_batch
         terminate = [None] * n_act_batch
 
         for k, indices in by_mod.items():
             i_task, i_subtask = k
-            assert len(set(self.subtasks[i] for i in indices)) == 1
-            if i_subtask >= len(self.subtasks[indices[0]]):
-                continue
-            actor = self.actors[self.subtasks[indices[0]][i_subtask]]
+            actor = self.actors[i_subtask]
             feed_dict = {
                 self.inputs.t_feats: [states[i].features() for i in indices],
             }
@@ -233,32 +230,27 @@ class ModularACModel(object):
             probs = np.exp(logprobs)
             for pr, i in zip(probs, indices):
 
-                if self.i_step[i] >= self.config.model.max_subtask_timesteps:
-                    a = self.n_actions
-                else:
-                    a = self.randoms[i].choice(self.n_actions, p=pr)
+                #if self.i_step[i] >= self.config.model.max_subtask_timesteps:
+                #    a = self.n_actions
+                #else:
+                a = self.randoms[i].choice(self.n_actions, p=pr)
 
                 if a >= self.world.n_actions:
-                    self.i_subtask[i] += 1
-                    self.i_step[i] = 0.
-                t = self.i_subtask[i] >= len(self.subtasks[indices[0]])
+                    self.subtask[i] = n_subtasks[i]
+                    self.arg[i] = n_args[i]
                 action[i] = a
-                terminate[i] = t
 
         return action, terminate
 
     def get_state(self):
         out = []
-        for i in range(len(self.i_subtask)):
-            if self.i_subtask[i] >= len(self.subtasks[i]):
-                out.append(ModelState(None, None, None, None, [0.]))
-            else:
-                out.append(ModelState(
-                        self.subtasks[i][self.i_subtask[i]], 
-                        self.args[i][self.i_subtask[i]], 
-                        len(self.args) - self.i_subtask[i],
-                        self.i_task[i],
-                        self.i_step[i].copy()))
+        for i in range(len(self.subtask)):
+            out.append(ModelState(
+                self.subtask[i],
+                self.arg[i],
+                0,
+                self.i_task[i],
+                0))
         return out
 
     def train(self, action=None, update_actor=True, update_critic=True):

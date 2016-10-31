@@ -2,6 +2,7 @@ from reflex import ReflexModel
 from attentive import AttentiveModel
 from modular import ModularModel
 from modular_ac import ModularACModel
+from modular_ac_interactive import ModularACInteractiveModel
 from keyboard import KeyboardModel
 
 def load(config):
