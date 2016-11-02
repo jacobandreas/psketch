@@ -1,15 +1,16 @@
-name: craft_args
+name: craft_joint-feat-plan
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
 model: 
   name: ModularACModel
-  use_args: true
+  use_args: false
+  featurize_plan: true
   max_subtask_timesteps: 15
   baseline: state
 trainer: 
   name: CurriculumTrainer
   use_curriculum: true
   improvement_threshold: 0.8
-  hints: "resources/craft/hints.args.yaml"
+  hints: "resources/craft/hints.yaml"
   max_timesteps: 100

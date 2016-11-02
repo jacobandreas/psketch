@@ -48,6 +48,11 @@ class ModularACModel(object):
 
         self.n_tasks = len(trainer.task_index)
         self.n_modules = len(trainer.subtask_index)
+        self.max_task_steps = max(len(t.steps) for t in trainer.task_index.contents.keys())
+        if self.config.model.featurize_plan:
+            self.n_features = world.n_features + self.n_modules * self.max_task_steps
+        else:
+            self.n_features = world.n_features
 
         self.n_actions = world.n_actions + 1
         self.t_n_steps = tf.Variable(1., name="n_steps")
@@ -106,7 +111,7 @@ class ModularACModel(object):
         # placeholders
         t_arg = tf.placeholder(tf.int32, shape=(None,))
         t_step = tf.placeholder(tf.float32, shape=(None, 1))
-        t_feats = tf.placeholder(tf.float32, shape=(None, world.n_features))
+        t_feats = tf.placeholder(tf.float32, shape=(None, self.n_features))
         t_action_mask = tf.placeholder(tf.float32, shape=(None, self.n_actions))
         t_reward = tf.placeholder(tf.float32, shape=(None,))
 
@@ -124,9 +129,14 @@ class ModularACModel(object):
         critics = {}
         critic_trainers = {}
 
-        for i_module in range(self.n_modules):
-            actor = build_actor(i_module, t_input, t_action_mask, extra_params=xp)
-            actors[i_module] = actor
+        if self.config.model.featurize_plan:
+            actor = build_actor(0, t_input, t_action_mask, extra_params=xp)
+            for i_module in range(self.n_modules):
+                actors[i_module] = actor
+        else:
+            for i_module in range(self.n_modules):
+                actor = build_actor(i_module, t_input, t_action_mask, extra_params=xp)
+                actors[i_module] = actor
 
         if self.config.model.baseline == "common":
             common_critic = build_critic(0, t_input, t_reward, extra_params=xp)
@@ -204,6 +214,15 @@ class ModularACModel(object):
             if n_transition.a < self.n_actions:
                 self.experiences.append(n_transition)
 
+    def featurize(self, state, mstate):
+        if self.config.model.featurize_plan:
+            task_features = np.zeros((self.max_task_steps, self.n_modules))
+            for i, m in enumerate(self.trainer.task_index.get(mstate.task).steps):
+                task_features[i, m] = 1
+            return np.concatenate((state.features(), task_features.ravel()))
+        else:
+            return state.features()
+
     def act(self, states):
         mstates = self.get_state()
         self.i_step += 1
@@ -223,7 +242,7 @@ class ModularACModel(object):
                 continue
             actor = self.actors[self.subtasks[indices[0]][i_subtask]]
             feed_dict = {
-                self.inputs.t_feats: [states[i].features() for i in indices],
+                self.inputs.t_feats: [self.featurize(states[i], mstates[i]) for i in indices],
             }
             if self.config.model.use_args:
                 feed_dict[self.inputs.t_arg] = [mstates[i].arg for i in indices]
@@ -294,7 +313,7 @@ class ModularACModel(object):
             for i_batch in range(int(np.ceil(1. * len(all_exps) / N_BATCH))):
                 exps = all_exps[i_batch * N_BATCH : (i_batch + 1) * N_BATCH]
                 s1, m1, a, s2, m2, r = zip(*exps)
-                feats1 = [s.features() for s in s1]
+                feats1 = [self.featurize(s, m) for s, m in zip(s1, m1)]
                 args1 = [m.arg for m in m1]
                 steps1 = [m.step for m in m1]
                 a_mask = np.zeros((len(exps), self.n_actions))
