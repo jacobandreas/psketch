@@ -1,7 +1,7 @@
-name: craft_joint-feat-plan
-recipes: "resources/craft/recipes.yaml"
+name: light_joint-feat-plan
+recipes: "resources/light/recipes.yaml"
 world: 
-  name: CraftWorld
+  name: LightWorld
 model: 
   name: ModularACModel
   use_args: false
@@ -12,5 +12,5 @@ trainer:
   name: CurriculumTrainer
   use_curriculum: true
   improvement_threshold: 0.8
-  hints: "resources/craft/hints.yaml"
+  hints: "resources/light/hints.yaml"
   max_timesteps: 100

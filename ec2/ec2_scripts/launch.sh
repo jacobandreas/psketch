@@ -21,7 +21,7 @@ elif [ "$zone" = "us-east-1e" ]; then
 fi
 
 image="ami-3d5c002a"
-key="jda-craft"
+key="jda"
 security_group="sg-1e3dfc78"
 
 if [ "$request" = "instance" ]; then
