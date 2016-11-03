@@ -14,3 +14,20 @@ trainer:
   improvement_threshold: 0.8
   hints: "resources/craft/hints.holdout.yaml"
   max_timesteps: 100
+
+#name: craft_transfer
+#recipes: "resources/craft/recipes.yaml"
+#world: 
+#  name: CraftWorld
+#model: 
+#  name: ModularACModel
+#  source: craft_holdout
+#  use_args: false
+#  max_subtask_timesteps: 15
+#  baseline: state
+#trainer: 
+#  name: CurriculumTrainer
+#  use_curriculum: true
+#  improvement_threshold: 0.8
+#  hints: "resources/craft/hints.holdout.yaml"
+#  max_timesteps: 100

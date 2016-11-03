@@ -46,7 +46,8 @@ class ModularACInteractiveModel(object):
         assert self.world is None
         self.world = world
         #self.meta = meta
-        self.meta = ReflexMetaModel(world, trainer.subtask_index)
+        self.meta = ReflexMetaModel(world, trainer.subtask_index,
+                trainer.cookbook.index)
         self.trainer = trainer
 
         self.n_tasks = len(trainer.task_index)
@@ -181,6 +182,7 @@ class ModularACInteractiveModel(object):
         self.i_task = []
         for i in range(n_act_batch):
             self.i_task.append(self.trainer.task_index[tasks[i]])
+        self.i_step = np.zeros((n_act_batch, 1))
 
         self.randoms = []
         for _ in range(n_act_batch):
@@ -197,18 +199,19 @@ class ModularACInteractiveModel(object):
         self.saver.restore(self.session, path)
 
     def experience(self, episode):
-        running_reward = 0
-        for transition in episode[::-1]:
-            running_reward = running_reward * DISCOUNT + transition.r
-            n_transition = transition._replace(r=running_reward)
-            if n_transition.a < self.n_actions:
-                self.experiences.append(n_transition)
+        #running_reward = 0
+        #for transition in episode[::-1]:
+        #    running_reward = running_reward * DISCOUNT + transition.r
+        #    n_transition = transition._replace(r=running_reward)
+        #    if n_transition.a < self.n_actions:
+        #        self.experiences.append(n_transition)
         self.meta.experience(episode)
 
     def act(self, states):
         n_subtasks, n_args = zip(*self.meta.act(states))
 
         mstates = self.get_state()
+        self.i_step += 1
         by_mod = defaultdict(list)
         n_act_batch = len(self.subtask)
 
@@ -233,13 +236,14 @@ class ModularACInteractiveModel(object):
             probs = np.exp(logprobs)
             for pr, i in zip(probs, indices):
 
-                #if self.i_step[i] >= self.config.model.max_subtask_timesteps:
-                #    a = self.n_actions
-                #else:
-                a = self.randoms[i].choice(self.n_actions, p=pr)
+                if self.i_step[i] >= self.config.model.max_subtask_timesteps:
+                    a = self.n_actions
+                else:
+                    a = self.randoms[i].choice(self.n_actions, p=pr)
                 terminate[i] = (n_subtasks[i] == 0)
 
                 if a >= self.world.n_actions:
+                    self.i_step[i] = 0.
                     self.subtask[i] = n_subtasks[i]
                     self.arg[i] = n_args[i]
                     #self.meta.counters[i] += 1

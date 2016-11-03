@@ -49,8 +49,8 @@ class ModularACModel(object):
         self.n_tasks = len(trainer.task_index)
         self.n_modules = len(trainer.subtask_index)
 
-        #self.n_actions = world.n_actions + 1
-        self.n_actions = world.n_actions
+        self.n_actions = world.n_actions + 1
+        #self.n_actions = world.n_actions
         self.t_n_steps = tf.Variable(1., name="n_steps")
         self.t_inc_steps = self.t_n_steps.assign(self.t_n_steps + 1)
         # TODO configurable optimizer
@@ -166,6 +166,8 @@ class ModularACModel(object):
         self.actor_trainers = actor_trainers
         self.critic_trainers = critic_trainers
         self.inputs = InputBundle(t_arg, t_step, t_feats, t_action_mask, t_reward)
+
+        self.saver.restore(self.session, "experiments/craft_holdout/modular_ac.chk")
 
     def init(self, states, tasks):
         n_act_batch = len(states)

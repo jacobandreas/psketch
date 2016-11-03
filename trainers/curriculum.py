@@ -9,12 +9,16 @@ import numpy as np
 import yaml
 
 N_ITERS = 3000000
-N_UPDATE = 10
+N_UPDATE = 100
 N_BATCH = 100
 N_TEST_BATCHES = 100
 IMPROVEMENT_THRESHOLD = 0.8
 
 Task = namedtuple("Task", ["goal", "steps"])
+
+import os
+import psutil
+process = psutil.Process(os.getpid())
 
 class CurriculumTrainer(object):
     def __init__(self, config):
@@ -234,6 +238,8 @@ class CurriculumTrainer(object):
 
         task_probs = []
         while i_iter < N_ITERS:
+            #print "before", process.memory_info().rss
+            #print "after", process.memory_info().rss
             min_reward = np.inf
 
             # TODO refactor
@@ -280,9 +286,9 @@ class CurriculumTrainer(object):
                             score)
                     scores.append(score)
                 logging.info("")
-                logging.info("[rollout0] %s", [t.a for t in transitions[0]])
-                logging.info("[rollout1] %s", [t.a for t in transitions[1]])
-                logging.info("[rollout2] %s", [t.a for t in transitions[2]])
+                logging.info("[rollout0] %s", [t.m1.action for t in transitions[0]])
+                logging.info("[rollout1] %s", [t.m1.action for t in transitions[1]])
+                logging.info("[rollout2] %s", [t.m1.action for t in transitions[2]])
                 logging.info("[reward] %s", total_reward / count)
                 logging.info("[error] %s", err / N_UPDATE)
                 logging.info("")
