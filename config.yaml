@@ -1,4 +1,4 @@
-name: craft_indep
+name: craft_indep_transfer
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
