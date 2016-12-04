@@ -182,14 +182,14 @@ class CurriculumTrainer(object):
                 min_reward = min(min_reward, min(scores))
 
                 # recompute task probs
-                #if self.config.trainer.use_curriculum:
-                #    task_probs = np.zeros(len(possible_tasks))
-                #    for i, task in enumerate(possible_tasks):
-                #        i_task = self.task_index[task]
-                #        task_probs[i] = 1. * task_rewards[i_task] / task_counts[i_task]
-                #    task_probs = 1 - task_probs
-                #    task_probs += 0.01
-                #    task_probs /= task_probs.sum()
+                if self.config.trainer.use_curriculum:
+                    task_probs = np.zeros(len(possible_tasks))
+                    for i, task in enumerate(possible_tasks):
+                        i_task = self.task_index[task]
+                        task_probs[i] = 1. * task_rewards[i_task] / task_counts[i_task]
+                    task_probs = 1 - task_probs
+                    task_probs += 0.01
+                    task_probs /= task_probs.sum()
 
             logging.info("[min reward] %s", min_reward)
             logging.info("")
