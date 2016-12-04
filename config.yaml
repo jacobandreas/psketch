@@ -1,7 +1,7 @@
 name: rebuttal_branavan_craft
-recipes: "resources/craft/recipes.yaml"
+recipes: "resources/light/recipes.yaml"
 world: 
-  name: CraftWorld
+  name: LightWorld
 model: 
   name: ModularACModel
   use_args: true
@@ -12,5 +12,5 @@ trainer:
   name: CurriculumTrainer
   use_curriculum: true
   improvement_threshold: 0.8
-  hints: "resources/craft/hints.args.yaml"
+  hints: "resources/light/hints.args.yaml"
   max_timesteps: 100
