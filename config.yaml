@@ -12,5 +12,5 @@ trainer:
   name: CurriculumTrainer
   use_curriculum: true
   improvement_threshold: 0.8
-  hints: "resources/craft/hints.yaml"
+  hints: "resources/craft/hints.args.yaml"
   max_timesteps: 100
