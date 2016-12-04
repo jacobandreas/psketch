@@ -113,11 +113,11 @@ class CurriculumTrainer(object):
         model.prepare(world, self)
         #model.load()
         subtasks = self.tasks_by_subtask.keys()
-        #if self.config.trainer.use_curriculum:
-        #    max_steps = 1
-        #else:
-        #    max_steps = 100
-        max_steps = 100
+        if self.config.trainer.use_curriculum:
+            max_steps = 1
+        else:
+            max_steps = 100
+        #max_steps = 100
         i_iter = 0
 
         task_probs = []

@@ -1,4 +1,4 @@
-name: rebuttal_branavan_craft
+name: rebuttal_branavan_light
 recipes: "resources/light/recipes.yaml"
 world: 
   name: LightWorld

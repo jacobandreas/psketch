@@ -20,4 +20,9 @@ primitives:
   - RDD
   - LUR
 
+  - left
+  - right
+  - up
+  - down
+
 recipes: {}
