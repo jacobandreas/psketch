@@ -1,34 +1,29 @@
-"go[L]":
-  ["do[left]"]
+"go[LL]":
+  ["do[left]", "do[left]"]
 
-"go[R]":
-  ["do[right]"]
-#"go[LL]":
-#  ["do[left]", "do[left]"]
-#
-#"go[LD]":
-#  ["do[left]", "do[down]"]
-#
-#"go[RD]":
-#  ["do[right]", "do[down]"]
-#
-#"go[UL]":
-#  ["do[up]", "do[left]"]
-#
-#"go[UR]":
-#  ["do[up]", "do[right]"]
-#
-#"go[URU]":
-#  ["do[up]", "do[right]", "do[up]"]
-#
-#"go[DRU]":
-#  ["do[down]", "do[right]", "do[up]"]
-#
-#"go[LLD]":
-#  ["do[left]", "do[left]", "do[down]"]
-#
-#"go[RDD]":
-#  ["do[right]", "do[down]", "do[down]"]
-#
-#"go[LUR]":
-#  ["do[left]", "do[up]", "do[right]"]
+"go[LD]":
+  ["do[left]", "do[down]"]
+
+"go[RD]":
+  ["do[right]", "do[down]"]
+
+"go[UL]":
+  ["do[up]", "do[left]"]
+
+"go[UR]":
+  ["do[up]", "do[right]"]
+
+"go[URU]":
+  ["do[up]", "do[right]", "do[up]"]
+
+"go[DRU]":
+  ["do[down]", "do[right]", "do[up]"]
+
+"go[LLD]":
+  ["do[left]", "do[left]", "do[down]"]
+
+"go[RDD]":
+  ["do[right]", "do[down]", "do[down]"]
+
+"go[LUR]":
+  ["do[left]", "do[up]", "do[right]"]
