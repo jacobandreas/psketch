@@ -58,7 +58,7 @@ class ModularACModel(object):
         self.t_n_steps = tf.Variable(1., name="n_steps")
         self.t_inc_steps = self.t_n_steps.assign(self.t_n_steps + 1)
         # TODO configurable optimizer
-        self.optimizer = tf.train.RMSPropOptimizer(0.003)
+        self.optimizer = tf.train.RMSPropOptimizer(0.001)
 
         def build_actor(index, t_input, t_action_mask, extra_params=[]):
             with tf.variable_scope("actor_%s" % index):
@@ -117,8 +117,8 @@ class ModularACModel(object):
 
         if self.config.model.use_args:
             t_embed, v_embed = net.embed(t_arg, len(trainer.cookbook.index),
-                    N_EMBED)
-            xp = v_embed
+                    N_EMBED, diagonal=tf.indicator_embeddings)
+            xp = v_embed if not indicator_embeddings else []
             t_input = tf.concat(1, (t_embed, t_feats))
         else:
             t_input = t_feats

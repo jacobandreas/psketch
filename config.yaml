@@ -5,6 +5,7 @@ world:
 model: 
   name: ModularACModel
   use_args: true
+  indicator_args: true
   featurize_plan: false
   max_subtask_timesteps: 15
   baseline: state

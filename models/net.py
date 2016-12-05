@@ -22,14 +22,19 @@ def mlp(t_in, widths):
         prev_width = width
     return prev_layer, weights
 
-def embed(t_in, n_embeddings, size, multi=False):
+def embed(t_in, n_embeddings, size, multi=False, diagonal=False):
+    if diagonal:
+        assert n_embeddings <= size
+        init = tf.constant_initializer(tf.eye(n_embeddings, size))
+    else:
+        init = tf.uniform_unit_scaling_initializer()
     if multi:
         varz = [tf.get_variable("embed%d" % i, shape=(n_embeddings, size),
-                    initializer=tf.uniform_unit_scaling_initializer())
+                    initializer=init)
                 for i in range(t_in.get_shape()[1])]
     else:
         varz = [tf.get_variable("embed", shape=(n_embeddings, size),
-                    initializer=tf.uniform_unit_scaling_initializer())]
+                    initializer=init)
     embedded = tf.nn.embedding_lookup(varz, t_in)
     eshape = embedded.get_shape()
     if multi:
