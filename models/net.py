@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 RELU_SCALE = 1.43
@@ -25,7 +26,7 @@ def mlp(t_in, widths):
 def embed(t_in, n_embeddings, size, multi=False, diagonal=False):
     if diagonal:
         assert n_embeddings <= size
-        init = tf.constant_initializer(tf.eye(n_embeddings, size))
+        init = tf.constant_initializer(np.eye(n_embeddings, size))
     else:
         init = tf.uniform_unit_scaling_initializer()
     if multi:
@@ -34,7 +35,7 @@ def embed(t_in, n_embeddings, size, multi=False, diagonal=False):
                 for i in range(t_in.get_shape()[1])]
     else:
         varz = [tf.get_variable("embed", shape=(n_embeddings, size),
-                    initializer=init)
+                    initializer=init)]
     embedded = tf.nn.embedding_lookup(varz, t_in)
     eshape = embedded.get_shape()
     if multi:

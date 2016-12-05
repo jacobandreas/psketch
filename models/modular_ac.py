@@ -117,8 +117,8 @@ class ModularACModel(object):
 
         if self.config.model.use_args:
             t_embed, v_embed = net.embed(t_arg, len(trainer.cookbook.index),
-                    N_EMBED, diagonal=tf.indicator_embeddings)
-            xp = v_embed if not indicator_embeddings else []
+                    N_EMBED, diagonal=self.config.model.indicator_args)
+            xp = v_embed if not self.config.model.indicator_args else []
             t_input = tf.concat(1, (t_embed, t_feats))
         else:
             t_input = t_feats
