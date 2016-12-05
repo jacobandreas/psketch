@@ -1,0 +1,2 @@
+model_checkpoint_path: "modular_ac.chk"
+all_model_checkpoint_paths: "modular_ac.chk"
