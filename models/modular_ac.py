@@ -58,7 +58,7 @@ class ModularACModel(object):
         self.t_n_steps = tf.Variable(1., name="n_steps")
         self.t_inc_steps = self.t_n_steps.assign(self.t_n_steps + 1)
         # TODO configurable optimizer
-        self.optimizer = tf.train.RMSPropOptimizer(0.0003)
+        self.optimizer = tf.train.RMSPropOptimizer(0.001)
 
         def build_actor(index, t_input, t_action_mask, extra_params=[]):
             with tf.variable_scope("actor_%s" % index):
@@ -362,6 +362,14 @@ class ModularACModel(object):
                 self.t_gradient_placeholders[k] = tf.placeholder(tf.float32, grad.shape)
             feed_dict[self.t_gradient_placeholders[k]] = grad
             updates.append((self.t_gradient_placeholders[k], param))
+
+        #    if "embed" in k:
+        #        for i, row in enumerate(grads[k]):
+        #            print self.trainer.cookbook.index.get(i)
+        #            print row
+
+        #exit()
+
         if self.t_update_gradient_op is None:
             self.t_update_gradient_op = self.optimizer.apply_gradients(updates)
         self.session.run(self.t_update_gradient_op, feed_dict=feed_dict)

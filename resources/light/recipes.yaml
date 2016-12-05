@@ -1,6 +1,9 @@
 environment: {}
 
 primitives:
+  - L
+  - R
+
   - LL
   - LU
   - LD

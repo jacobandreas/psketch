@@ -4,8 +4,8 @@ world:
   name: LightWorld
 model: 
   name: ModularACModel
-  use_args: true
-  featurize_plan: false
+  use_args: false
+  featurize_plan: true
   max_subtask_timesteps: 15
   baseline: state
 trainer: 
