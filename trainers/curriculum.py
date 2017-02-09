@@ -79,7 +79,7 @@ class CurriculumTrainer(object):
         # act!
         while not all(done) and timer > 0:
             mstates_before = model.get_state()
-            action, terminate = model.act(states_before)
+            action, terminate, prob = model.act(states_before)
             mstates_after = model.get_state()
             states_after = [None for _ in range(N_BATCH)]
             for i in range(N_BATCH):
@@ -98,7 +98,7 @@ class CurriculumTrainer(object):
                 if not done[i]:
                     transitions[i].append(Transition(
                             states_before[i], mstates_before[i], action[i], 
-                            states_after[i], mstates_after[i], reward))
+                            states_after[i], mstates_after[i], reward, prob[i]))
                     total_reward += reward
 
                 if terminate[i]:
@@ -113,11 +113,11 @@ class CurriculumTrainer(object):
         model.prepare(world, self)
         #model.load()
         subtasks = self.tasks_by_subtask.keys()
-        #if self.config.trainer.use_curriculum:
-        #    max_steps = 1
-        #else:
-        #    max_steps = 100
-        max_steps = 100
+        if self.config.trainer.use_curriculum:
+            max_steps = 1
+        else:
+            max_steps = 100
+        #max_steps = 100
         i_iter = 0
 
         task_probs = []
@@ -143,9 +143,7 @@ class CurriculumTrainer(object):
                 task_rewards = defaultdict(lambda: 0)
                 task_counts = defaultdict(lambda: 0)
                 for j in range(N_UPDATE):
-                    err = None
-                    # get enough samples for one training step
-                    while err is None:
+                    for _ in range(2):
                         i_iter += N_BATCH
                         transitions, reward = self.do_rollout(model, world, 
                                 possible_tasks, task_probs)
@@ -157,7 +155,17 @@ class CurriculumTrainer(object):
                         count += 1
                         for t in transitions:
                             model.experience(t)
-                        err = model.train()
+
+                    err = None
+                    for _ in range(10):
+                        e = model.train()
+                        if e is None:
+                            pass
+                        elif err is None:
+                            err = e
+                        else:
+                            err += e
+                    model.clear_experiences()
                     total_err += err
 
                 # log
@@ -182,14 +190,14 @@ class CurriculumTrainer(object):
                 min_reward = min(min_reward, min(scores))
 
                 # recompute task probs
-                #if self.config.trainer.use_curriculum:
-                #    task_probs = np.zeros(len(possible_tasks))
-                #    for i, task in enumerate(possible_tasks):
-                #        i_task = self.task_index[task]
-                #        task_probs[i] = 1. * task_rewards[i_task] / task_counts[i_task]
-                #    task_probs = 1 - task_probs
-                #    task_probs += 0.01
-                #    task_probs /= task_probs.sum()
+                if self.config.trainer.use_curriculum:
+                    task_probs = np.zeros(len(possible_tasks))
+                    for i, task in enumerate(possible_tasks):
+                        i_task = self.task_index[task]
+                        task_probs[i] = 1. * task_rewards[i_task] / task_counts[i_task]
+                    task_probs = 1 - task_probs
+                    task_probs += 0.01
+                    task_probs /= task_probs.sum()
 
             logging.info("[min reward] %s", min_reward)
             logging.info("")

@@ -8,8 +8,10 @@ import os
 import tensorflow as tf
 from tensorflow.python.framework.ops import IndexedSlicesValue
 
-N_UPDATE = 2000
-N_BATCH = 2000
+N_UPDATE = 1000
+N_BATCH = 1000
+
+#N_HISTORY = 2000
 
 N_HIDDEN = 128
 N_EMBED = 64
@@ -19,9 +21,9 @@ DISCOUNT = 0.9
 ActorModule = namedtuple("ActorModule", ["t_probs", "t_chosen_prob", "params",
         "t_decrement_op"])
 CriticModule = namedtuple("CriticModule", ["t_value", "params"])
-Trainer = namedtuple("Trainer", ["t_loss", "t_grad", "t_train_op"])
+Trainer = namedtuple("Trainer", ["t_loss", "t_grad", "t_train_op", "extra"])
 InputBundle = namedtuple("InputBundle", ["t_arg", "t_step", "t_feats", 
-        "t_action_mask", "t_reward"])
+        "t_action_mask", "t_reward", "t_orig_prob"])
 
 ModelState = namedtuple("ModelState", ["action", "arg", "remaining", "task", "step"])
 
@@ -59,6 +61,7 @@ class ModularACModel(object):
         self.t_inc_steps = self.t_n_steps.assign(self.t_n_steps + 1)
         # TODO configurable optimizer
         self.optimizer = tf.train.RMSPropOptimizer(0.001)
+        #self.optimizer = tf.train.RMSPropOptimizer(0.0003)
 
         def build_actor(index, t_input, t_action_mask, extra_params=[]):
             with tf.variable_scope("actor_%s" % index):
@@ -90,14 +93,19 @@ class ModularACModel(object):
                             "Baseline %s is not implemented" % self.config.model.baseline)
             return CriticModule(t_value, v_value + extra_params)
 
-        def build_actor_trainer(actor, critic, t_reward):
+        def build_actor_trainer(actor, critic, t_reward, t_orig_prob):
             t_advantage = t_reward - critic.t_value
+            t_ratio = tf.stop_gradient(tf.exp(actor.t_chosen_prob)) / t_orig_prob
+            t_ppo = tf.minimum(
+                    t_ratio * t_advantage,
+                    tf.clip_by_value(t_ratio, 0.8, 1.2) * t_advantage)
             # TODO configurable entropy regularizer
-            actor_loss = -tf.reduce_sum(actor.t_chosen_prob * t_advantage) + \
+            actor_loss = -tf.reduce_sum(t_ppo * actor.t_chosen_prob) + \
                     0.001 * tf.reduce_sum(tf.exp(actor.t_probs) * actor.t_probs)
             actor_grad = tf.gradients(actor_loss, actor.params)
-            actor_trainer = Trainer(actor_loss, actor_grad, 
-                    self.optimizer.minimize(actor_loss, var_list=actor.params))
+            actor_trainer = Trainer(actor_loss, actor_grad,
+                    self.optimizer.minimize(actor_loss, var_list=actor.params),
+                    t_ppo)
             return actor_trainer
 
         def build_critic_trainer(t_reward, critic):
@@ -105,7 +113,8 @@ class ModularACModel(object):
             critic_loss = tf.reduce_sum(tf.square(t_advantage))
             critic_grad = tf.gradients(critic_loss, critic.params)
             critic_trainer = Trainer(critic_loss, critic_grad,
-                    self.optimizer.minimize(critic_loss, var_list=critic.params))
+                    self.optimizer.minimize(critic_loss, var_list=critic.params),
+                    None)
             return critic_trainer
 
         # placeholders
@@ -114,6 +123,7 @@ class ModularACModel(object):
         t_feats = tf.placeholder(tf.float32, shape=(None, self.n_features))
         t_action_mask = tf.placeholder(tf.float32, shape=(None, self.n_actions))
         t_reward = tf.placeholder(tf.float32, shape=(None,))
+        t_orig_prob = tf.placeholder(tf.float32, shape=(None,))
 
         if self.config.model.use_args:
             t_embed, v_embed = net.embed(t_arg, len(trainer.cookbook.index),
@@ -155,7 +165,7 @@ class ModularACModel(object):
                 critic_trainers[i_task, i_module] = critic_trainer
 
                 actor = actors[i_module]
-                actor_trainer = build_actor_trainer(actor, critic, t_reward)
+                actor_trainer = build_actor_trainer(actor, critic, t_reward, t_orig_prob)
                 actor_trainers[i_task, i_module] = actor_trainer
 
         self.t_gradient_placeholders = {}
@@ -174,7 +184,8 @@ class ModularACModel(object):
         self.critics = critics
         self.actor_trainers = actor_trainers
         self.critic_trainers = critic_trainers
-        self.inputs = InputBundle(t_arg, t_step, t_feats, t_action_mask, t_reward)
+        self.inputs = InputBundle(t_arg, t_step, t_feats, t_action_mask,
+                t_reward, t_orig_prob)
 
     def init(self, states, tasks):
         n_act_batch = len(states)
@@ -213,6 +224,10 @@ class ModularACModel(object):
             n_transition = transition._replace(r=running_reward)
             if n_transition.a < self.n_actions:
                 self.experiences.append(n_transition)
+        #self.experiences = self.experiences[-N_HISTORY:]
+
+    def clear_experiences(self):
+        self.experiences = []
 
     def featurize(self, state, mstate):
         if self.config.model.featurize_plan:
@@ -234,6 +249,7 @@ class ModularACModel(object):
 
         action = [None] * n_act_batch
         terminate = [None] * n_act_batch
+        prob = [None] * n_act_batch
 
         for k, indices in by_mod.items():
             i_task, i_subtask = k
@@ -253,8 +269,10 @@ class ModularACModel(object):
 
                 if self.i_step[i] >= self.config.model.max_subtask_timesteps:
                     a = self.n_actions
+                    p = 0
                 else:
                     a = self.randoms[i].choice(self.n_actions, p=pr)
+                    p = pr[a]
 
                 if a >= self.world.n_actions:
                     self.i_subtask[i] += 1
@@ -262,8 +280,9 @@ class ModularACModel(object):
                 t = self.i_subtask[i] >= len(self.subtasks[indices[0]])
                 action[i] = a
                 terminate[i] = t
+                prob[i] = p
 
-        return action, terminate
+        return action, terminate, prob
 
     def get_state(self):
         out = []
@@ -284,9 +303,12 @@ class ModularACModel(object):
             experiences = self.experiences
         else:
             experiences = [e for e in self.experiences if e.m1.action == action]
+        print len(experiences)
         if len(experiences) < N_UPDATE:
             return None
-        batch = experiences[:N_UPDATE]
+        #batch = experiences[:N_UPDATE]
+        batch = [experiences[np.random.randint(len(experiences))] for _ in
+            range(N_UPDATE)]
 
         by_mod = defaultdict(list)
         for e in batch:
@@ -312,7 +334,7 @@ class ModularACModel(object):
             all_exps = by_mod[i_task, i_mod1]
             for i_batch in range(int(np.ceil(1. * len(all_exps) / N_BATCH))):
                 exps = all_exps[i_batch * N_BATCH : (i_batch + 1) * N_BATCH]
-                s1, m1, a, s2, m2, r = zip(*exps)
+                s1, m1, a, s2, m2, r, p = zip(*exps)
                 feats1 = [self.featurize(s, m) for s, m in zip(s1, m1)]
                 args1 = [m.arg for m in m1]
                 steps1 = [m.step for m in m1]
@@ -323,15 +345,20 @@ class ModularACModel(object):
                 feed_dict = {
                     self.inputs.t_feats: feats1,
                     self.inputs.t_action_mask: a_mask,
-                    self.inputs.t_reward: r
+                    self.inputs.t_reward: r,
+                    self.inputs.t_orig_prob: p
                 }
                 if self.config.model.use_args:
                     feed_dict[self.inputs.t_arg] = args1
 
-                actor_grad, actor_err = self.session.run([actor_trainer.t_grad, actor_trainer.t_loss],
+                actor_grad, actor_err, ppo = self.session.run(
+                        [actor_trainer.t_grad, actor_trainer.t_loss, actor_trainer.extra],
                         feed_dict=feed_dict)
-                critic_grad, critic_err = self.session.run([critic_trainer.t_grad, critic_trainer.t_loss], 
+                critic_grad, critic_err = self.session.run(
+                        [critic_trainer.t_grad, critic_trainer.t_loss], 
                         feed_dict=feed_dict)
+
+                #print np.mean(ppo ** 2)
 
                 total_actor_err += actor_err
                 total_critic_err += critic_err
@@ -366,7 +393,7 @@ class ModularACModel(object):
             self.t_update_gradient_op = self.optimizer.apply_gradients(updates)
         self.session.run(self.t_update_gradient_op, feed_dict=feed_dict)
 
-        self.experiences = []
+        #self.experiences = []
         self.session.run(self.t_inc_steps)
 
         return np.asarray([total_actor_err, total_critic_err]) / N_UPDATE
