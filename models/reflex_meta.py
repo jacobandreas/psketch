@@ -196,7 +196,8 @@ class ReflexMetaModel(object):
         self.iter += 1
         total_err = 0
         if len(self.all_experiences) < BATCH_SIZE:
-            return None
+            #return None
+            return 0
 
         self.good_experiences = self.good_experiences[-HISTORY_SIZE/10:]
         self.all_experiences = self.all_experiences[-HISTORY_SIZE:]

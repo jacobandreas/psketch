@@ -146,7 +146,6 @@ class CurriculumTrainer(object):
 
     def train(self, model, world):
         model.prepare(world, self)
-        return
         #model.load()
         if self.config.trainer.use_curriculum:
             max_steps = 1

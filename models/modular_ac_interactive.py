@@ -162,8 +162,8 @@ class ModularACInteractiveModel(object):
         self.saver = tf.train.Saver()
 
         self.session = tf.Session()
-        #self.session.run(tf.initialize_all_variables())
-        #self.session.run([actor.t_decrement_op for actor in actors.values()])
+        self.session.run(tf.initialize_all_variables())
+        self.session.run([actor.t_decrement_op for actor in actors.values()])
 
         self.actors = actors
         self.critics = critics
@@ -171,7 +171,7 @@ class ModularACInteractiveModel(object):
         self.critic_trainers = critic_trainers
         self.inputs = InputBundle(t_arg, t_step, t_feats, t_action_mask, t_reward)
 
-        self.saver.restore(self.session, "experiments/craft_holdout/modular_ac.chk")
+        #self.saver.restore(self.session, "experiments/craft_holdout/modular_ac.chk")
 
     def init(self, states, tasks):
         n_act_batch = len(states)
@@ -199,12 +199,12 @@ class ModularACInteractiveModel(object):
         self.saver.restore(self.session, path)
 
     def experience(self, episode):
-        #running_reward = 0
-        #for transition in episode[::-1]:
-        #    running_reward = running_reward * DISCOUNT + transition.r
-        #    n_transition = transition._replace(r=running_reward)
-        #    if n_transition.a < self.n_actions:
-        #        self.experiences.append(n_transition)
+        running_reward = 0
+        for transition in episode[::-1]:
+            running_reward = running_reward * DISCOUNT + transition.r
+            n_transition = transition._replace(r=running_reward)
+            if n_transition.a < self.n_actions:
+                self.experiences.append(n_transition)
         self.meta.experience(episode)
 
     def act(self, states):
@@ -264,94 +264,97 @@ class ModularACInteractiveModel(object):
         return out
 
     def train(self, action=None, update_actor=True, update_critic=True):
-        return self.meta.train()
-        #if action is None:
-        #    experiences = self.experiences
-        #else:
-        #    experiences = [e for e in self.experiences if e.m1.action == action]
-        #if len(experiences) < N_UPDATE:
-        #    return None
-        #batch = experiences[:N_UPDATE]
+        meta_err = self.meta.train()
 
-        #by_mod = defaultdict(list)
-        #for e in batch:
-        #    by_mod[e.m1.task, e.m1.action].append(e)
+        if action is None:
+            experiences = self.experiences
+        else:
+            experiences = [e for e in self.experiences if e.m1.action == action]
+        if len(experiences) < N_UPDATE:
+            return None
+        batch = experiences[:N_UPDATE]
 
-        #grads = {}
-        #params = {}
-        #for module in self.actors.values() + self.critics.values():
-        #    for param in module.params:
-        #        if param.name not in grads:
-        #            grads[param.name] = np.zeros(param.get_shape(), np.float32)
-        #            params[param.name] = param
-        #touched = set()
+        by_mod = defaultdict(list)
+        for e in batch:
+            by_mod[e.m1.task, e.m1.action].append(e)
 
-        #total_actor_err = 0
-        #total_critic_err = 0
-        #for i_task, i_mod1 in by_mod:
-        #    actor = self.actors[i_mod1]
-        #    critic = self.critics[i_task, i_mod1]
-        #    actor_trainer = self.actor_trainers[i_task, i_mod1]
-        #    critic_trainer = self.critic_trainers[i_task, i_mod1]
+        grads = {}
+        params = {}
+        for module in self.actors.values() + self.critics.values():
+            for param in module.params:
+                if param.name not in grads:
+                    grads[param.name] = np.zeros(param.get_shape(), np.float32)
+                    params[param.name] = param
+        touched = set()
 
-        #    all_exps = by_mod[i_task, i_mod1]
-        #    for i_batch in range(int(np.ceil(1. * len(all_exps) / N_BATCH))):
-        #        exps = all_exps[i_batch * N_BATCH : (i_batch + 1) * N_BATCH]
-        #        s1, m1, a, s2, m2, r = zip(*exps)
-        #        feats1 = [s.features() for s in s1]
-        #        args1 = [m.arg for m in m1]
-        #        steps1 = [m.step for m in m1]
-        #        a_mask = np.zeros((len(exps), self.n_actions))
-        #        for i_datum, aa in enumerate(a):
-        #            a_mask[i_datum, aa] = 1
+        total_actor_err = 0
+        total_critic_err = 0
+        for i_task, i_mod1 in by_mod:
+            actor = self.actors[i_mod1]
+            critic = self.critics[i_task, i_mod1]
+            actor_trainer = self.actor_trainers[i_task, i_mod1]
+            critic_trainer = self.critic_trainers[i_task, i_mod1]
 
-        #        feed_dict = {
-        #            self.inputs.t_feats: feats1,
-        #            self.inputs.t_action_mask: a_mask,
-        #            self.inputs.t_reward: r
-        #        }
-        #        if self.config.model.use_args:
-        #            feed_dict[self.inputs.t_arg] = args1
+            all_exps = by_mod[i_task, i_mod1]
+            for i_batch in range(int(np.ceil(1. * len(all_exps) / N_BATCH))):
+                exps = all_exps[i_batch * N_BATCH : (i_batch + 1) * N_BATCH]
+                s1, m1, a, s2, m2, r = zip(*exps)
+                feats1 = [s.features() for s in s1]
+                args1 = [m.arg for m in m1]
+                steps1 = [m.step for m in m1]
+                a_mask = np.zeros((len(exps), self.n_actions))
+                for i_datum, aa in enumerate(a):
+                    a_mask[i_datum, aa] = 1
 
-        #        actor_grad, actor_err = self.session.run([actor_trainer.t_grad, actor_trainer.t_loss],
-        #                feed_dict=feed_dict)
-        #        critic_grad, critic_err = self.session.run([critic_trainer.t_grad, critic_trainer.t_loss], 
-        #                feed_dict=feed_dict)
+                feed_dict = {
+                    self.inputs.t_feats: feats1,
+                    self.inputs.t_action_mask: a_mask,
+                    self.inputs.t_reward: r
+                }
+                if self.config.model.use_args:
+                    feed_dict[self.inputs.t_arg] = args1
 
-        #        total_actor_err += actor_err
-        #        total_critic_err += critic_err
+                actor_grad, actor_err = self.session.run([actor_trainer.t_grad, actor_trainer.t_loss],
+                        feed_dict=feed_dict)
+                critic_grad, critic_err = self.session.run([critic_trainer.t_grad, critic_trainer.t_loss], 
+                        feed_dict=feed_dict)
 
-        #        if update_actor:
-        #            for param, grad in zip(actor.params, actor_grad):
-        #                increment_sparse_or_dense(grads[param.name], grad)
-        #                touched.add(param.name)
-        #        if update_critic:
-        #            for param, grad in zip(critic.params, critic_grad):
-        #                increment_sparse_or_dense(grads[param.name], grad)
-        #                touched.add(param.name)
+                total_actor_err += actor_err
+                total_critic_err += critic_err
 
-        #global_norm = 0
-        #for k in params:
-        #    grads[k] /= N_UPDATE
-        #    global_norm += (grads[k] ** 2).sum()
-        #rescale = min(1., 1. / global_norm)
+                if update_actor:
+                    for param, grad in zip(actor.params, actor_grad):
+                        increment_sparse_or_dense(grads[param.name], grad)
+                        touched.add(param.name)
+                if update_critic:
+                    for param, grad in zip(critic.params, critic_grad):
+                        increment_sparse_or_dense(grads[param.name], grad)
+                        touched.add(param.name)
 
-        ## TODO precompute this part of the graph
-        #updates = []
-        #feed_dict = {}
-        #for k in params:
-        #    param = params[k]
-        #    grad = grads[k]
-        #    grad *= rescale
-        #    if k not in self.t_gradient_placeholders:
-        #        self.t_gradient_placeholders[k] = tf.placeholder(tf.float32, grad.shape)
-        #    feed_dict[self.t_gradient_placeholders[k]] = grad
-        #    updates.append((self.t_gradient_placeholders[k], param))
-        #if self.t_update_gradient_op is None:
-        #    self.t_update_gradient_op = self.optimizer.apply_gradients(updates)
-        #self.session.run(self.t_update_gradient_op, feed_dict=feed_dict)
+        global_norm = 0
+        for k in params:
+            grads[k] /= N_UPDATE
+            global_norm += (grads[k] ** 2).sum()
+        rescale = min(1., 1. / global_norm)
 
-        #self.experiences = []
-        #self.session.run(self.t_inc_steps)
+        # TODO precompute this part of the graph
+        updates = []
+        feed_dict = {}
+        for k in params:
+            param = params[k]
+            grad = grads[k]
+            grad *= rescale
+            if k not in self.t_gradient_placeholders:
+                self.t_gradient_placeholders[k] = tf.placeholder(tf.float32, grad.shape)
+            feed_dict[self.t_gradient_placeholders[k]] = grad
+            updates.append((self.t_gradient_placeholders[k], param))
+        if self.t_update_gradient_op is None:
+            self.t_update_gradient_op = self.optimizer.apply_gradients(updates)
+        self.session.run(self.t_update_gradient_op, feed_dict=feed_dict)
+
+        self.experiences = []
+        self.session.run(self.t_inc_steps)
 
         #return np.asarray([total_actor_err, total_critic_err]) / N_UPDATE
+
+        return np.asarray([total_actor_err, total_critic_err, meta_err * N_UPDATE]) / N_UPDATE

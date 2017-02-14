@@ -19,9 +19,9 @@ def main():
     world = worlds.load(config)
     model = models.load(config)
     trainer = trainers.load(config)
-    #trainer.train(model, world)
+    trainer.train(model, world)
     #trainer.test(model, world)
-    trainer.transfer(model, world)
+    #trainer.transfer(model, world)
 
 def configure():
     # load config
