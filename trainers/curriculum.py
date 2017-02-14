@@ -143,9 +143,10 @@ class CurriculumTrainer(object):
                 task_rewards = defaultdict(lambda: 0)
                 task_counts = defaultdict(lambda: 0)
                 for j in range(N_UPDATE):
-                    for _ in range(2):
+                    err = None
+                    while err is None:
                         i_iter += N_BATCH
-                        transitions, reward = self.do_rollout(model, world, 
+                        transitions, reward = self.do_rollout(model, world,
                                 possible_tasks, task_probs)
                         for t in transitions:
                             tr = sum(tt.r for tt in t)
@@ -155,18 +156,42 @@ class CurriculumTrainer(object):
                         count += 1
                         for t in transitions:
                             model.experience(t)
+                        err = model.train()
 
-                    err = None
-                    for _ in range(10):
-                        e = model.train()
-                        if e is None:
-                            pass
-                        elif err is None:
-                            err = e
-                        else:
-                            err += e
+                        for _ in range(1):
+                            e = model.train()
+                            if e is None:
+                                break
+                            elif err is None:
+                                err = e
+                            else:
+                                err += e
                     model.clear_experiences()
-                    total_err += err
+
+                    ### for _ in range(2):
+                    ###     i_iter += N_BATCH
+                    ###     transitions, reward = self.do_rollout(model, world, 
+                    ###             possible_tasks, task_probs)
+                    ###     for t in transitions:
+                    ###         tr = sum(tt.r for tt in t)
+                    ###         task_rewards[t[0].m1.task] += tr
+                    ###         task_counts[t[0].m1.task] += 1
+                    ###     total_reward += reward
+                    ###     count += 1
+                    ###     for t in transitions:
+                    ###         model.experience(t)
+
+                    ### err = None
+                    ### for _ in range(10):
+                    ###     e = model.train()
+                    ###     if e is None:
+                    ###         pass
+                    ###     elif err is None:
+                    ###         err = e
+                    ###     else:
+                    ###         err += e
+                    ### model.clear_experiences()
+                    ### total_err += err
 
                 # log
                 logging.info("[step] %d", i_iter)

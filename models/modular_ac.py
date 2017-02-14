@@ -303,7 +303,7 @@ class ModularACModel(object):
             experiences = self.experiences
         else:
             experiences = [e for e in self.experiences if e.m1.action == action]
-        print len(experiences)
+        #print len(experiences)
         if len(experiences) < N_UPDATE:
             return None
         #batch = experiences[:N_UPDATE]
