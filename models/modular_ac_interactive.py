@@ -45,13 +45,18 @@ class ModularACInteractiveModel(object):
     def prepare(self, world, trainer):
         assert self.world is None
         self.world = world
-        #self.meta = meta
-        self.meta = ReflexMetaModel(world, trainer.subtask_index,
-                trainer.cookbook.index)
         self.trainer = trainer
 
         self.n_tasks = len(trainer.task_index)
         self.n_modules = len(trainer.subtask_index)
+
+        #self.meta = meta
+        #self.meta = ReflexMetaModel(world, trainer.subtask_index,
+        #        trainer.cookbook.index)
+        self.metas = []
+        for i_task in range(self.n_tasks):
+            self.metas.append(ReflexMetaModel(world, trainer.subtask_index,
+                trainer.cookbook.index))
 
         self.n_actions = world.n_actions + 1
         self.t_n_steps = tf.Variable(1., name="n_steps")
@@ -176,12 +181,21 @@ class ModularACInteractiveModel(object):
     def init(self, states, tasks):
         n_act_batch = len(states)
 
-        self.subtask, self.arg = zip(*self.meta.act(states, init=True))
-        self.subtask = list(self.subtask)
+        #self.subtask, self.arg = zip(*self.meta.act(states, init=True))
+        #self.subtask = list(self.subtask)
+
+        self.subtask = []
+        self.arg = []
+
         self.arg = list(self.arg)
         self.i_task = []
         for i in range(n_act_batch):
-            self.i_task.append(self.trainer.task_index[tasks[i]])
+            i_task = self.trainer.task_index[tasks[i]]
+            self.i_task.append(i_task)
+            (subtask, arg), = self.metas[i_task].act([states[i]], init=True)
+            self.subtask.append(subtask)
+            self.arg.append(arg)
+
         self.i_step = np.zeros((n_act_batch, 1))
 
         self.randoms = []
@@ -205,10 +219,17 @@ class ModularACInteractiveModel(object):
             n_transition = transition._replace(r=running_reward)
             if n_transition.a < self.n_actions:
                 self.experiences.append(n_transition)
-        self.meta.experience(episode)
+        i_task = episode[0].m1.task
+        self.metas[i_task].experience(episode)
 
     def act(self, states):
-        n_subtasks, n_args = zip(*self.meta.act(states))
+        #n_subtasks, n_args = zip(*self.meta.act(states))
+        n_subtasks = []
+        n_args = []
+        for i, state in enumerate(states):
+            ((subtask, arg),) = self.metas[self.i_task[i]].act([state])
+            n_subtasks.append(subtask)
+            n_args.append(arg)
 
         mstates = self.get_state()
         self.i_step += 1
@@ -264,7 +285,8 @@ class ModularACInteractiveModel(object):
         return out
 
     def train(self, action=None, update_actor=True, update_critic=True):
-        meta_err = self.meta.train()
+        #meta_err = self.meta.train()
+        meta_err = np.mean([m.train() for m in self.metas])
 
         if action is None:
             experiences = self.experiences
