@@ -9,7 +9,6 @@ import numpy as np
 import yaml
 
 N_ITERS = 3000000
-#N_UPDATE = 100
 N_UPDATE = 100
 N_BATCH = 100
 N_TEST_BATCHES = 100
