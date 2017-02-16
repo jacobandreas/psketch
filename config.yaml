@@ -1,4 +1,4 @@
-name: craft_modular_common-baseline
+name: craft_modular_common-baseline_unordered
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
