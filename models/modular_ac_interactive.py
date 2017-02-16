@@ -223,13 +223,24 @@ class ModularACInteractiveModel(object):
         self.metas[i_task].experience(episode)
 
     def act(self, states):
-        #n_subtasks, n_args = zip(*self.meta.act(states))
-        n_subtasks = []
-        n_args = []
+        n_subtasks = [None] * len(states)
+        n_args = [None] * len(states)
+
+        by_task = defaultdict(list)
         for i, state in enumerate(states):
-            ((subtask, arg),) = self.metas[self.i_task[i]].act([state])
-            n_subtasks.append(subtask)
-            n_args.append(arg)
+            by_task[self.i_task[i]].append(i)
+
+        for i_task, indices in by_task.items():
+            tstates = [states[i] for i in indices]
+            subtasks, args = zip(*self.metas[i_task].act(tstates))
+            for t_index, true_index in enumerate(indices):
+                n_subtasks[true_index] = subtasks[t_index]
+                n_args[true_index] = subtasks[t_index]
+
+        #for i, state in enumerate(states):
+        #    ((subtask, arg),) = self.metas[self.i_task[i]].act([state])
+        #    n_subtasks.append(subtask)
+        #    n_args.append(arg)
 
         mstates = self.get_state()
         self.i_step += 1
