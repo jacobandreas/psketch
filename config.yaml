@@ -1,16 +1,16 @@
-name: light_joint-feat-plan
-recipes: "resources/light/recipes.yaml"
+name: craft_modular_task-baseline_unordered
+recipes: "resources/craft/recipes.yaml"
 world: 
-  name: LightWorld
+  name: CraftWorld
 model: 
   name: ModularACModel
   use_args: false
-  featurize_plan: true
+  featurize_plan: false
   max_subtask_timesteps: 15
-  baseline: state
+  baseline: task
 trainer: 
   name: CurriculumTrainer
   use_curriculum: true
   improvement_threshold: 0.8
-  hints: "resources/light/hints.yaml"
+  hints: "resources/craft/hints.yaml"
   max_timesteps: 100
