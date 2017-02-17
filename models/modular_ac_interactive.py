@@ -197,6 +197,7 @@ class ModularACInteractiveModel(object):
             self.arg.append(arg)
 
         self.i_step = np.zeros((n_act_batch, 1))
+        self.i_sub = np.zeros((n_act_batch, 1))
 
         self.randoms = []
         for _ in range(n_act_batch):
@@ -272,12 +273,13 @@ class ModularACInteractiveModel(object):
                     a = self.n_actions
                 else:
                     a = self.randoms[i].choice(self.n_actions, p=pr)
-                terminate[i] = (n_subtasks[i] == 0)
+                terminate[i] = (n_subtasks[i] == 0 or self.i_sub[i] > 6)
 
                 if a >= self.world.n_actions:
                     self.i_step[i] = 0.
                     self.subtask[i] = n_subtasks[i]
                     self.arg[i] = n_args[i]
+                    self.i_sub[i] += 1
                     #self.meta.counters[i] += 1
                 terminate[i] = (self.subtask[i] == 0)
                 action[i] = self.world.n_actions if terminate[i] else a

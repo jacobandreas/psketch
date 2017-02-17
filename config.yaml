@@ -1,4 +1,4 @@
-name: craft_unsup
+name: craft_unsup_ordered
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
