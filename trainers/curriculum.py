@@ -147,10 +147,11 @@ class CurriculumTrainer(object):
     def train(self, model, world):
         model.prepare(world, self)
         #model.load()
-        if self.config.trainer.use_curriculum:
-            max_steps = 1
-        else:
-            max_steps = 100
+        #if self.config.trainer.use_curriculum:
+        #    max_steps = 1
+        #else:
+        #    max_steps = 100
+        max_steps = 100
         i_iter = 0
 
         task_probs = []
