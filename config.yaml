@@ -1,4 +1,4 @@
-name: craft_modular_state-baseline
+name: craft_modular_state-baseline_longer
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
