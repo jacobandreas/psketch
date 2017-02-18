@@ -297,6 +297,7 @@ class ModularACInteractiveModel(object):
                 0))
         return out
 
+    #@profile
     def train(self, action=None, update_actor=True, update_critic=True):
         #meta_err = self.meta.train()
         meta_err = np.mean([m.train() for m in self.metas])

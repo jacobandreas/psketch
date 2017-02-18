@@ -192,6 +192,7 @@ class ReflexMetaModel(object):
         #        if n_transition.r > 0:
         #            self.good_experiences.append(n_transition)
 
+    #@profile
     def train(self):
         self.iter += 1
         total_err = 0
@@ -210,8 +211,8 @@ class ReflexMetaModel(object):
         #self.good_experiences = self.good_experiences[-HISTORY_SIZE/10:]
         #self.all_experiences = self.all_experiences[-(HISTORY_SIZE-len(self.good_experiences)):]
         #self.experiences = self.good_experiences + self.all_experiences
-        for _iter in range(100):
-        #for _iter in range(1):
+        #for _iter in range(100):
+        for _iter in range(1):
             batch_exp_i = [np.random.randint(len(self.experiences)) for i in
                     range(BATCH_SIZE)]
             batch_exp = [self.experiences[i] for i in batch_exp_i]
@@ -234,8 +235,10 @@ class ReflexMetaModel(object):
                 self.t_reward: [e.r for e in batch_exp]
             }
 
-            err, _, sc = self.session.run([self.t_err, self.t_train_op,
-                self.t_scores], feed_dict=feed_dict)
+            #err, _, sc = self.session.run([self.t_err, self.t_train_op,
+            #    self.t_scores], feed_dict=feed_dict)
+
+            err, _ = self.session.run([self.t_err, self.t_train_op], feed_dict=feed_dict)
 
             ##wood, plank, grass, bed
             #ing = ["wood", "plank", "grass", "bed"]
