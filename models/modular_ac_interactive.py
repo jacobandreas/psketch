@@ -178,7 +178,7 @@ class ModularACInteractiveModel(object):
 
         #self.saver.restore(self.session, "experiments/craft_holdout/modular_ac.chk")
 
-    def init(self, states, tasks):
+    def init(self, states, tasks, max_sketch_len):
         n_act_batch = len(states)
 
         #self.subtask, self.arg = zip(*self.meta.act(states, init=True))
@@ -186,6 +186,7 @@ class ModularACInteractiveModel(object):
 
         self.sketches = []
         self.i_sketch_step = [0 for _ in range(n_act_batch)]
+        self.max_sketch_len = max_sketch_len
 
         self.subtask = []
         self.arg = []
@@ -285,7 +286,10 @@ class ModularACInteractiveModel(object):
                 if a >= self.world.n_actions:
                     self.i_step[i] = 0.
                     if len(self.sketches[i]) == 0:
+                        self.i_sub[i] += 1
                         self.subtask[i] = n_subtasks[i]
+                        if self.i_sub[i] >= self.max_sketch_len:
+                            self.subtask[i] = 0
                         self.arg[i] = n_args[i]
                     else:
                         self.i_sketch_step[i] += 1
@@ -297,7 +301,7 @@ class ModularACInteractiveModel(object):
 
                     #self.meta.counters[i] += 1
 
-                terminate[i] = (self.subtask[i] == 0)
+                terminate[i] = (self.subtask[i] == 0 or self.i_sub[i] >= self.max_sketch_len)
                 action[i] = self.world.n_actions if terminate[i] else a
 
         return action, terminate

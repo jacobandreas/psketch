@@ -63,7 +63,7 @@ class CurriculumTrainer(object):
                 self.test_tasks.append(task)
             self.task_index.index(task)
 
-    def do_rollout(self, model, world, possible_tasks, task_probs):
+    def do_rollout(self, model, world, possible_tasks, task_probs, max_steps):
         states_before = []
         tasks = []
         goal_names = []
@@ -80,7 +80,7 @@ class CurriculumTrainer(object):
             tasks.append(task)
             goal_names.append(goal_name)
             goal_args.append(goal_arg)
-        model.init(states_before, tasks)
+        model.init(states_before, tasks, max_steps)
         transitions = [[] for _ in range(N_BATCH)]
 
         # initialize timer
@@ -182,7 +182,7 @@ class CurriculumTrainer(object):
                     while err is None:
                         i_iter += N_BATCH
                         transitions, reward = self.do_rollout(model, world, 
-                                possible_tasks, task_probs)
+                                possible_tasks, task_probs, max_steps)
                         for t in transitions:
                             tr = sum(tt.r for tt in t)
                             task_rewards[t[0].m1.task] += tr
@@ -263,7 +263,7 @@ class CurriculumTrainer(object):
                     while err is None:
                         i_iter += N_BATCH
                         transitions, reward = self.do_rollout(model, world, 
-                                possible_tasks, task_probs)
+                                possible_tasks, task_probs, 100)
                         for t in transitions:
                             tr = sum(tt.r for tt in t)
                             task_rewards[t[0].m1.task] += tr
