@@ -184,15 +184,23 @@ class ModularACInteractiveModel(object):
         #self.subtask, self.arg = zip(*self.meta.act(states, init=True))
         #self.subtask = list(self.subtask)
 
+        self.sketches = []
+        self.i_sketch_step = [0 for _ in range(n_act_batch)]
+
         self.subtask = []
         self.arg = []
 
         self.arg = list(self.arg)
         self.i_task = []
         for i in range(n_act_batch):
+            sketch = tasks[i].steps
+            self.sketches.append(sketch)
             i_task = self.trainer.task_index[tasks[i]]
             self.i_task.append(i_task)
-            (subtask, arg), = self.metas[i_task].act([states[i]], init=True)
+            if len(sketch) == 0:
+                (subtask, arg), = self.metas[i_task].act([states[i]], init=True)
+            else:
+                subtask, arg = sketch[0], None
             self.subtask.append(subtask)
             self.arg.append(arg)
 
@@ -273,14 +281,22 @@ class ModularACInteractiveModel(object):
                     a = self.n_actions
                 else:
                     a = self.randoms[i].choice(self.n_actions, p=pr)
-                terminate[i] = (n_subtasks[i] == 0 or self.i_sub[i] > 6)
 
                 if a >= self.world.n_actions:
                     self.i_step[i] = 0.
-                    self.subtask[i] = n_subtasks[i]
-                    self.arg[i] = n_args[i]
-                    self.i_sub[i] += 1
+                    if len(self.sketches[i]) == 0:
+                        self.subtask[i] = n_subtasks[i]
+                        self.arg[i] = n_args[i]
+                    else:
+                        self.i_sketch_step[i] += 1
+                        step = self.i_sketch_step[i]
+                        if step >= len(self.sketches[i]):
+                            self.subtask[i] = 0
+                        else:
+                            self.subtask[i] = self.sketches[i][step]
+
                     #self.meta.counters[i] += 1
+
                 terminate[i] = (self.subtask[i] == 0)
                 action[i] = self.world.n_actions if terminate[i] else a
 

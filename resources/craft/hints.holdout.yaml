@@ -6,7 +6,8 @@ train:
     ["get_wood", "make1"]
   
   "make[cloth]":
-    ["get_grass", "make2"]
+    #["get_grass", "make2"]
+    []
   
   "make[rope]":
     ["get_grass", "make0"]
@@ -15,7 +16,8 @@ train:
     ["get_iron", "get_wood", "make2"]
   
   "make[shears]":
-    ["get_wood", "make1", "get_iron", "make1"]
+    #["get_wood", "make1", "get_iron", "make1"]
+    []
   
   "get[gold]":
     ["get_iron", "get_wood", "make2", "get_gold"]
@@ -24,17 +26,18 @@ train:
     ["get_wood", "make1", "get_iron", "make0", "get_gem"]
 
   "make[bed]":
-    ["get_wood", "make0", "get_grass", "make1"]
+    #["get_wood", "make0", "get_grass", "make1"]
+    []
   
   "make[axe]":
     ["get_wood", "make1", "get_iron", "make0"]
 
-test:
+test: {}
   #"get[plank]":
   #  ["get_wood", "make0"]
 
-  "make[bed]":
-    ["get_wood", "make0", "get_grass", "make1"]
-  
-  "make[axe]":
-    ["get_wood", "make1", "get_iron", "make0"]
+  #"make[bed]":
+  #  ["get_wood", "make0", "get_grass", "make1"]
+  #
+  #"make[axe]":
+  #  ["get_wood", "make1", "get_iron", "make0"]

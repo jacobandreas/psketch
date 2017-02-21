@@ -147,11 +147,11 @@ class CurriculumTrainer(object):
     def train(self, model, world):
         model.prepare(world, self)
         #model.load()
-        #if self.config.trainer.use_curriculum:
-        #    max_steps = 1
-        #else:
-        #    max_steps = 100
-        max_steps = 100
+        if self.config.trainer.use_curriculum:
+            max_steps = 2
+        else:
+            max_steps = 100
+        #max_steps = 100
         i_iter = 0
 
         task_probs = []
@@ -200,12 +200,14 @@ class CurriculumTrainer(object):
                 for i, task in enumerate(possible_tasks):
                     i_task = self.task_index[task]
                     score = 1. * task_rewards[i_task] / task_counts[i_task]
-                    logging.info("[task] %s[%s] %s %s", 
+                    head = "[task]" if len(task.steps) > 0 else "[task*]"
+                    logging.info(head + " %s[%s] %s %s", 
                             self.subtask_index.get(task.goal[0]),
                             self.cookbook.index.get(task.goal[1]),
                             task_probs[i],
                             score)
-                    scores.append(score)
+                    if len(task.steps) > 0:
+                        scores.append(score)
                 logging.info("")
                 logging.info("[rollout0] %s", [t.a for t in transitions[0]])
                 logging.info("[rollout1] %s", [t.a for t in transitions[1]])
@@ -279,12 +281,15 @@ class CurriculumTrainer(object):
                 for i, task in enumerate(possible_tasks):
                     i_task = self.task_index[task]
                     score = 1. * task_rewards[i_task] / task_counts[i_task]
-                    logging.info("[task] %s[%s] %s %s", 
+                    print task, len(task.steps), task.steps
+                    head = "[task]" if len(task.steps) > 0 else "[task*]"
+                    logging.info(head + " %s[%s] %s %s", 
                             self.subtask_index.get(task.goal[0]),
                             self.cookbook.index.get(task.goal[1]),
                             task_probs[i],
                             score)
-                    scores.append(score)
+                    if len(task.steps) > 0:
+                        scores.append(score)
                 logging.info("")
                 logging.info("[rollout0] %s", [t.m1.action for t in transitions[0]])
                 logging.info("[rollout1] %s", [t.m1.action for t in transitions[1]])
