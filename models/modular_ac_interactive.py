@@ -53,10 +53,11 @@ class ModularACInteractiveModel(object):
         #self.meta = meta
         #self.meta = ReflexMetaModel(world, trainer.subtask_index,
         #        trainer.cookbook.index)
-        self.metas = []
-        for i_task in range(self.n_tasks):
-            self.metas.append(ReflexMetaModel(world, trainer.subtask_index,
-                trainer.cookbook.index))
+
+        #self.metas = []
+        #for i_task in range(self.n_tasks):
+        #    self.metas.append(ReflexMetaModel(world, trainer.subtask_index,
+        #        trainer.cookbook.index))
 
         self.n_actions = world.n_actions + 1
         self.t_n_steps = tf.Variable(1., name="n_steps")
@@ -199,7 +200,8 @@ class ModularACInteractiveModel(object):
             i_task = self.trainer.task_index[tasks[i]]
             self.i_task.append(i_task)
             if len(sketch) == 0:
-                (subtask, arg), = self.metas[i_task].act([states[i]], init=True)
+                pass
+                #(subtask, arg), = self.metas[i_task].act([states[i]], init=True)
             else:
                 subtask, arg = sketch[0], None
             self.subtask.append(subtask)
@@ -230,7 +232,7 @@ class ModularACInteractiveModel(object):
             if n_transition.a < self.n_actions:
                 self.experiences.append(n_transition)
         i_task = episode[0].m1.task
-        self.metas[i_task].experience(episode)
+        #self.metas[i_task].experience(episode)
 
     def act(self, states):
         n_subtasks = [None] * len(states)
@@ -240,12 +242,12 @@ class ModularACInteractiveModel(object):
         for i, state in enumerate(states):
             by_task[self.i_task[i]].append(i)
 
-        for i_task, indices in by_task.items():
-            tstates = [states[i] for i in indices]
-            subtasks, args = zip(*self.metas[i_task].act(tstates))
-            for t_index, true_index in enumerate(indices):
-                n_subtasks[true_index] = subtasks[t_index]
-                n_args[true_index] = subtasks[t_index]
+        #for i_task, indices in by_task.items():
+        #    tstates = [states[i] for i in indices]
+        #    subtasks, args = zip(*self.metas[i_task].act(tstates))
+        #    for t_index, true_index in enumerate(indices):
+        #        n_subtasks[true_index] = subtasks[t_index]
+        #        n_args[true_index] = subtasks[t_index]
 
         #for i, state in enumerate(states):
         #    ((subtask, arg),) = self.metas[self.i_task[i]].act([state])
@@ -259,6 +261,8 @@ class ModularACInteractiveModel(object):
 
         for i in range(n_act_batch):
             by_mod[self.i_task[i], self.subtask[i]].append(i)
+            #print self.i_task[i], self.subtask[i]
+        #exit()
 
         action = [None] * n_act_batch
         terminate = [None] * n_act_batch
@@ -302,7 +306,11 @@ class ModularACInteractiveModel(object):
                     #self.meta.counters[i] += 1
 
                 terminate[i] = (self.subtask[i] == 0 or self.i_sub[i] >= self.max_sketch_len)
-                action[i] = self.world.n_actions if terminate[i] else a
+                #action[i] = self.world.n_actions if terminate[i] else a
+                action[i] = a
+
+        #print action
+        #exit()
 
         return action, terminate
 
@@ -320,7 +328,8 @@ class ModularACInteractiveModel(object):
     #@profile
     def train(self, action=None, update_actor=True, update_critic=True):
         #meta_err = self.meta.train()
-        meta_err = np.mean([m.train() for m in self.metas])
+        #meta_err = np.mean([m.train() for m in self.metas])
+        meta_err = 0
 
         if action is None:
             experiences = self.experiences
@@ -412,5 +421,6 @@ class ModularACInteractiveModel(object):
         self.session.run(self.t_inc_steps)
 
         #return np.asarray([total_actor_err, total_critic_err]) / N_UPDATE
+        print total_actor_err, total_critic_err
 
         return np.asarray([total_actor_err, total_critic_err, meta_err * N_UPDATE]) / N_UPDATE

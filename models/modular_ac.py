@@ -159,7 +159,7 @@ class ModularACModel(object):
 
         self.session = tf.Session()
         self.session.run(tf.initialize_all_variables())
-        #self.session.run([actor.t_decrement_op for actor in actors.values()])
+        self.session.run([actor.t_decrement_op for actor in actors.values()])
 
         self.actors = actors
         self.critics = critics
@@ -167,9 +167,9 @@ class ModularACModel(object):
         self.critic_trainers = critic_trainers
         self.inputs = InputBundle(t_arg, t_step, t_feats, t_action_mask, t_reward)
 
-        self.saver.restore(self.session, "experiments/craft_holdout/modular_ac.chk")
+        #self.saver.restore(self.session, "experiments/craft_holdout/modular_ac.chk")
 
-    def init(self, states, tasks):
+    def init(self, states, tasks, _):
         n_act_batch = len(states)
         self.subtasks = []
         self.args = []
@@ -214,7 +214,9 @@ class ModularACModel(object):
         n_act_batch = len(self.i_subtask)
 
         for i in range(n_act_batch):
+            #print self.i_task[i], self.subtasks[i][self.i_subtask[i]]
             by_mod[self.i_task[i], self.i_subtask[i]].append(i)
+        #exit()
 
         action = [None] * n_act_batch
         terminate = [None] * n_act_batch
@@ -246,6 +248,8 @@ class ModularACModel(object):
                 t = self.i_subtask[i] >= len(self.subtasks[indices[0]])
                 action[i] = a
                 terminate[i] = t
+
+        #print action
 
         return action, terminate
 
@@ -352,5 +356,8 @@ class ModularACModel(object):
 
         self.experiences = []
         self.session.run(self.t_inc_steps)
+
+        print total_actor_err, total_critic_err
+        #exit()
 
         return np.asarray([total_actor_err, total_critic_err]) / N_UPDATE
