@@ -11,8 +11,9 @@ DISCOUNT = 0.9
 BATCH_SIZE = 2000
 HISTORY_SIZE = 50000
 
-CHOICES = [2, 3, 4, 5, 6, 7, 9, 10, 0]
-SOLUTION = [4, 5, 2, 6, 0]
+#CHOICES = [2, 3, 4, 5, 6, 7, 9, 10, 0]
+#SOLUTION = [4, 5, 2, 6, 0]
+CHOICES = [1, 2, 3, 4, 0]
 
 class ReflexMetaModel(object):
     def __init__(self, world, subtask_index, resource_index):

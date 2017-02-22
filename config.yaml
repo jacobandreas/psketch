@@ -1,7 +1,7 @@
-name: craft_unsup_ordered
-recipes: "resources/craft/recipes.yaml"
+name: light_unsup_unordered
+recipes: "resources/light/recipes.yaml"
 world: 
-  name: CraftWorld
+  name: LightWorld
 model: 
   name: ModularACInteractiveModel
   #source: craft_holdout
@@ -12,7 +12,7 @@ trainer:
   name: CurriculumTrainer
   use_curriculum: true
   improvement_threshold: 0.8
-  hints: "resources/craft/hints.holdout.yaml"
+  hints: "resources/light/hints.holdout.yaml"
   max_timesteps: 100
 
 #name: craft_transfer

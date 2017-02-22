@@ -1,0 +1,32 @@
+train:
+  "go[LL]":
+    ["left", "left"]
+
+  "go[LD]":
+    ["left", "down"]
+
+  "go[RD]":
+    ["right", "down"]
+
+  "go[UL]":
+    ["up", "left"]
+
+  "go[UR]":
+    ["up", "right"]
+
+  "go[URU]":
+    ["up", "right", "up"]
+
+  "go[DRU]":
+    ["down", "right", "up"]
+
+  "go[LLD]":
+    ["left", "left", "down"]
+
+  "go[RDD]":
+    ["right", "down", "down"]
+
+  "go[LUR]":
+    ["left", "up", "right"]
+
+test: {}
