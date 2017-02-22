@@ -1,0 +1,41 @@
+2017-02-22 07:24:59,864 INFO     BEGIN
+2017-02-22 07:24:59,864 INFO     struct {
+    trainer:
+        improvement_threshold: 0.8
+        use_curriculum: True
+        name: 'CurriculumTrainer'
+        max_timesteps: 100
+        hints: 'resources/craft/hints.holdout.yaml'
+    name: 'craft_mix33'
+    recipes: 'resources/craft/recipes.yaml'
+    world:
+        name: 'CraftWorld'
+    model:
+        use_args: False
+        name: 'ModularACInteractiveModel'
+        max_subtask_timesteps: 15
+        baseline: 'state'
+    experiment_dir: 'experiments/craft_mix33'
+}
+2017-02-22 07:25:51,560 INFO     [max steps] 2
+2017-02-22 07:25:52,185 ERROR    Uncaught exception: None
+None
+2017-02-22 07:25:52,185 ERROR    Traceback (most recent call last):
+
+  File "main.py", line 52, in <module>
+    main()
+
+  File "main.py", line 22, in main
+    trainer.train(model, world)
+
+  File "/home/ubuntu/craft/trainers/curriculum.py", line 185, in train
+    possible_tasks, task_probs, max_steps)
+
+  File "/home/ubuntu/craft/trainers/curriculum.py", line 94, in do_rollout
+    action, terminate = model.act(states_before)
+
+  File "/home/ubuntu/craft/models/modular_ac_interactive.py", line 274, in act
+    actor = self.actors[i_subtask]
+
+KeyError: None
+None
