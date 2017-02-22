@@ -1,0 +1,41 @@
+2017-02-22 16:43:03,828 INFO     BEGIN
+2017-02-22 16:43:03,828 INFO     struct {
+    trainer:
+        improvement_threshold: 0.8
+        use_curriculum: True
+        name: 'CurriculumTrainer'
+        max_timesteps: 100
+        hints: 'resources/craft/hints.holdout.yaml'
+    name: 'craft_mix33'
+    recipes: 'resources/craft/recipes.yaml'
+    world:
+        name: 'CraftWorld'
+    model:
+        use_args: False
+        name: 'ModularACInteractiveModel'
+        max_subtask_timesteps: 15
+        baseline: 'state'
+    experiment_dir: 'experiments/craft_mix33'
+}
+2017-02-22 16:43:58,365 INFO     [max steps] 100
+2017-02-22 16:46:08,509 ERROR    Uncaught exception: 8 is not in list
+None
+2017-02-22 16:46:08,509 ERROR    Traceback (most recent call last):
+
+  File "main.py", line 52, in <module>
+    main()
+
+  File "main.py", line 22, in main
+    trainer.train(model, world)
+
+  File "/home/ubuntu/craft/trainers/curriculum.py", line 194, in train
+    err = model.train()
+
+  File "/home/ubuntu/craft/models/modular_ac_interactive.py", line 330, in train
+    meta_err = np.mean([m.train() for m in self.metas])
+
+  File "/home/ubuntu/craft/models/reflex_meta.py", line 223, in train
+    action_mask[i, CHOICES.index(e.m1.action)] = 1
+
+ValueError: 8 is not in list
+None
