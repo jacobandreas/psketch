@@ -9,7 +9,7 @@ import numpy as np
 import yaml
 
 N_ITERS = 3000000
-N_UPDATE = 100
+N_UPDATE = 500
 N_BATCH = 100
 N_TEST_BATCHES = 100
 IMPROVEMENT_THRESHOLD = 0.8
@@ -229,7 +229,7 @@ class CurriculumTrainer(object):
             logging.info("")
             if min_reward > self.config.trainer.improvement_threshold:
                 max_steps += 1
-                model.save()
+            model.save()
 
     def transfer(self, model, world):
         model.prepare(world, self)
