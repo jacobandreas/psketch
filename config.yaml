@@ -1,10 +1,10 @@
-name: craft_unsup_transfer_train
+name: craft_unsup_transfer_eval
 recipes: "resources/craft/recipes.yaml"
 world: 
   name: CraftWorld
 model: 
   name: ModularACInteractiveModel
-  #source: craft_holdout
+  source: craft_unsup_transfer_train
   use_args: false
   max_subtask_timesteps: 15
   baseline: state
