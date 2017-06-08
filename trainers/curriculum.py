@@ -10,6 +10,7 @@ import yaml
 
 N_ITERS = 3000000
 N_UPDATE = 500
+#N_UPDATE = 10
 N_BATCH = 100
 N_TEST_BATCHES = 100
 IMPROVEMENT_THRESHOLD = 0.8
@@ -233,7 +234,7 @@ class CurriculumTrainer(object):
 
     def transfer(self, model, world):
         model.prepare(world, self)
-        #model.load()
+        model.load()
         i_iter = 0
 
         task_probs = []
@@ -245,6 +246,9 @@ class CurriculumTrainer(object):
             # TODO refactor
             for _ in range(1):
                 possible_tasks = self.test_tasks
+                #possible_tasks = self.train_tasks
+                #    print possible_tasks
+                #exit()
 
                 # re-initialize task probs if necessary
                 if len(task_probs) != len(possible_tasks):

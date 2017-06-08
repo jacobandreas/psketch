@@ -1,6 +1,5 @@
 from misc import util
 import net
-from reflex_meta import ReflexMetaModel
 
 from collections import namedtuple, defaultdict
 import logging
@@ -34,7 +33,7 @@ def increment_sparse_or_dense(into, increment):
     else:
         into += increment
 
-class ModularACInteractiveModel(object):
+class ModularACModel(object):
     def __init__(self, config):
         self.experiences = []
         self.world = None
@@ -49,21 +48,17 @@ class ModularACInteractiveModel(object):
 
         self.n_tasks = len(trainer.task_index)
         self.n_modules = len(trainer.subtask_index)
-
-        #self.meta = meta
-        #self.meta = ReflexMetaModel(world, trainer.subtask_index,
-        #        trainer.cookbook.index)
-        self.metas = []
-        for i_task in range(self.n_tasks):
-            self.metas.append(ReflexMetaModel(world, trainer.subtask_index,
-                trainer.cookbook.index))
+        self.max_task_steps = max(len(t.steps) for t in trainer.task_index.contents.keys())
+        if self.config.model.featurize_plan:
+            self.n_features = world.n_features + self.n_modules * self.max_task_steps
+        else:
+            self.n_features = world.n_features
 
         self.n_actions = world.n_actions + 1
         self.t_n_steps = tf.Variable(1., name="n_steps")
         self.t_inc_steps = self.t_n_steps.assign(self.t_n_steps + 1)
         # TODO configurable optimizer
         self.optimizer = tf.train.RMSPropOptimizer(0.001)
-
 
         def build_actor(index, t_input, t_action_mask, extra_params=[]):
             with tf.variable_scope("actor_%s" % index):
@@ -116,7 +111,7 @@ class ModularACInteractiveModel(object):
         # placeholders
         t_arg = tf.placeholder(tf.int32, shape=(None,))
         t_step = tf.placeholder(tf.float32, shape=(None, 1))
-        t_feats = tf.placeholder(tf.float32, shape=(None, world.n_features))
+        t_feats = tf.placeholder(tf.float32, shape=(None, self.n_features))
         t_action_mask = tf.placeholder(tf.float32, shape=(None, self.n_actions))
         t_reward = tf.placeholder(tf.float32, shape=(None,))
 
@@ -134,9 +129,14 @@ class ModularACInteractiveModel(object):
         critics = {}
         critic_trainers = {}
 
-        for i_module in range(self.n_modules):
-            actor = build_actor(i_module, t_input, t_action_mask, extra_params=xp)
-            actors[i_module] = actor
+        if self.config.model.featurize_plan:
+            actor = build_actor(0, t_input, t_action_mask, extra_params=xp)
+            for i_module in range(self.n_modules):
+                actors[i_module] = actor
+        else:
+            for i_module in range(self.n_modules):
+                actor = build_actor(i_module, t_input, t_action_mask, extra_params=xp)
+                actors[i_module] = actor
 
         if self.config.model.baseline == "common":
             common_critic = build_critic(0, t_input, t_reward, extra_params=xp)
@@ -176,29 +176,22 @@ class ModularACInteractiveModel(object):
         self.critic_trainers = critic_trainers
         self.inputs = InputBundle(t_arg, t_step, t_feats, t_action_mask, t_reward)
 
-        #self.saver.restore(self.session, "experiments/craft_holdout/modular_ac.chk")
-
     def init(self, states, tasks):
         n_act_batch = len(states)
-
-        #self.subtask, self.arg = zip(*self.meta.act(states, init=True))
-        #self.subtask = list(self.subtask)
-
-        self.subtask = []
-        self.arg = []
-
-        self.arg = list(self.arg)
+        self.subtasks = []
+        self.args = []
         self.i_task = []
         for i in range(n_act_batch):
-            i_task = self.trainer.task_index[tasks[i]]
-            self.i_task.append(i_task)
-            (subtask, arg), = self.metas[i_task].act([states[i]], init=True)
-            self.subtask.append(subtask)
-            self.arg.append(arg)
-
+            if self.config.model.use_args:
+                subtasks, args = zip(*tasks[i].steps)
+            else:
+                subtasks = tasks[i].steps
+                args = [None] * len(subtasks)
+            self.subtasks.append(tuple(subtasks))
+            self.args.append(tuple(args))
+            self.i_task.append(self.trainer.task_index[tasks[i]])
+        self.i_subtask = [0 for _ in range(n_act_batch)]
         self.i_step = np.zeros((n_act_batch, 1))
-        self.i_sub = np.zeros((n_act_batch, 1))
-
         self.randoms = []
         for _ in range(n_act_batch):
             self.randoms.append(np.random.RandomState(self.next_actor_seed))
@@ -209,8 +202,7 @@ class ModularACInteractiveModel(object):
                 os.path.join(self.config.experiment_dir, "modular_ac.chk"))
 
     def load(self):
-        #path = os.path.join(self.config.experiment_dir, "modular_ac.chk")
-        path = os.path.join("experiments", self.config.model.source, "modular_ac.chk")
+        path = os.path.join(self.config.experiment_dir, "modular_ac.chk")
         logging.info("loaded %s", path)
         self.saver.restore(self.session, path)
 
@@ -221,47 +213,36 @@ class ModularACInteractiveModel(object):
             n_transition = transition._replace(r=running_reward)
             if n_transition.a < self.n_actions:
                 self.experiences.append(n_transition)
-        i_task = episode[0].m1.task
-        self.metas[i_task].experience(episode)
+
+    def featurize(self, state, mstate):
+        if self.config.model.featurize_plan:
+            task_features = np.zeros((self.max_task_steps, self.n_modules))
+            for i, m in enumerate(self.trainer.task_index.get(mstate.task).steps):
+                task_features[i, m] = 1
+            return np.concatenate((state.features(), task_features.ravel()))
+        else:
+            return state.features()
 
     def act(self, states):
-        n_subtasks = [None] * len(states)
-        n_args = [None] * len(states)
-
-        by_task = defaultdict(list)
-        for i, state in enumerate(states):
-            by_task[self.i_task[i]].append(i)
-
-        for i_task, indices in by_task.items():
-            tstates = [states[i] for i in indices]
-            subtasks, args = zip(*self.metas[i_task].act(tstates))
-            for t_index, true_index in enumerate(indices):
-                n_subtasks[true_index] = subtasks[t_index]
-                n_args[true_index] = subtasks[t_index]
-
-        #for i, state in enumerate(states):
-        #    ((subtask, arg),) = self.metas[self.i_task[i]].act([state])
-        #    n_subtasks.append(subtask)
-        #    n_args.append(arg)
-
         mstates = self.get_state()
         self.i_step += 1
         by_mod = defaultdict(list)
-        n_act_batch = len(self.subtask)
+        n_act_batch = len(self.i_subtask)
 
         for i in range(n_act_batch):
-            by_mod[self.i_task[i], self.subtask[i]].append(i)
+            by_mod[self.i_task[i], self.i_subtask[i]].append(i)
 
         action = [None] * n_act_batch
         terminate = [None] * n_act_batch
 
         for k, indices in by_mod.items():
             i_task, i_subtask = k
-            if i_subtask == 0:
+            assert len(set(self.subtasks[i] for i in indices)) == 1
+            if i_subtask >= len(self.subtasks[indices[0]]):
                 continue
-            actor = self.actors[i_subtask]
+            actor = self.actors[self.subtasks[indices[0]][i_subtask]]
             feed_dict = {
-                self.inputs.t_feats: [states[i].features() for i in indices],
+                self.inputs.t_feats: [self.featurize(states[i], mstates[i]) for i in indices],
             }
             if self.config.model.use_args:
                 feed_dict[self.inputs.t_arg] = [mstates[i].arg for i in indices]
@@ -274,35 +255,31 @@ class ModularACInteractiveModel(object):
                     a = self.n_actions
                 else:
                     a = self.randoms[i].choice(self.n_actions, p=pr)
-                terminate[i] = (n_subtasks[i] == 0 or self.i_sub[i] > 6)
 
                 if a >= self.world.n_actions:
+                    self.i_subtask[i] += 1
                     self.i_step[i] = 0.
-                    self.subtask[i] = n_subtasks[i]
-                    self.arg[i] = n_args[i]
-                    self.i_sub[i] += 1
-                    #self.meta.counters[i] += 1
-                terminate[i] = (self.subtask[i] == 0)
-                action[i] = self.world.n_actions if terminate[i] else a
+                t = self.i_subtask[i] >= len(self.subtasks[indices[0]])
+                action[i] = a
+                terminate[i] = t
 
         return action, terminate
 
     def get_state(self):
         out = []
-        for i in range(len(self.subtask)):
-            out.append(ModelState(
-                self.subtask[i],
-                self.arg[i],
-                0,
-                self.i_task[i],
-                0))
+        for i in range(len(self.i_subtask)):
+            if self.i_subtask[i] >= len(self.subtasks[i]):
+                out.append(ModelState(None, None, None, None, [0.]))
+            else:
+                out.append(ModelState(
+                        self.subtasks[i][self.i_subtask[i]], 
+                        self.args[i][self.i_subtask[i]], 
+                        len(self.args) - self.i_subtask[i],
+                        self.i_task[i],
+                        self.i_step[i].copy()))
         return out
 
-    #@profile
     def train(self, action=None, update_actor=True, update_critic=True):
-        #meta_err = self.meta.train()
-        meta_err = np.mean([m.train() for m in self.metas])
-
         if action is None:
             experiences = self.experiences
         else:
@@ -336,7 +313,7 @@ class ModularACInteractiveModel(object):
             for i_batch in range(int(np.ceil(1. * len(all_exps) / N_BATCH))):
                 exps = all_exps[i_batch * N_BATCH : (i_batch + 1) * N_BATCH]
                 s1, m1, a, s2, m2, r = zip(*exps)
-                feats1 = [s.features() for s in s1]
+                feats1 = [self.featurize(s, m) for s, m in zip(s1, m1)]
                 args1 = [m.arg for m in m1]
                 steps1 = [m.step for m in m1]
                 a_mask = np.zeros((len(exps), self.n_actions))
@@ -392,6 +369,4 @@ class ModularACInteractiveModel(object):
         self.experiences = []
         self.session.run(self.t_inc_steps)
 
-        #return np.asarray([total_actor_err, total_critic_err]) / N_UPDATE
-
-        return np.asarray([total_actor_err, total_critic_err, meta_err * N_UPDATE]) / N_UPDATE
+        return np.asarray([total_actor_err, total_critic_err]) / N_UPDATE
