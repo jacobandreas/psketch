@@ -33,8 +33,8 @@ test:
 #   "get[plank]":
 #     ["get_wood", "make0"]
 #
-  "make[bed]":
-    ["get_wood", "make0", "get_grass", "make1"]
+#  "make[bed]":
+#    ["get_wood", "make0", "get_grass", "make1"]
   
-#"make[axe]":
-#    ["get_wood", "make1", "get_iron", "make0"]
+"make[axe]":
+    ["get_wood", "make1", "get_iron", "make0"]
