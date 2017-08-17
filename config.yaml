@@ -1,4 +1,4 @@
-name: light_joint-feat-plan__1
+name: light_joint-feat-plan__2
 recipes: "resources/light/recipes.yaml"
 world: 
   name: LightWorld
