@@ -8,6 +8,7 @@ model:
   featurize_plan: true
   max_subtask_timesteps: 15
   baseline: state
+  seed: 1
 trainer: 
   name: CurriculumTrainer
   use_curriculum: true
