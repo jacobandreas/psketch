@@ -1,4 +1,4 @@
-name: light_joint-feat-plan__3
+name: light_joint-feat-plan__4
 recipes: "resources/light/recipes.yaml"
 world: 
   name: LightWorld
@@ -8,7 +8,7 @@ model:
   featurize_plan: true
   max_subtask_timesteps: 15
   baseline: state
-  seed: 3
+  seed: 4
 trainer: 
   name: CurriculumTrainer
   use_curriculum: true
