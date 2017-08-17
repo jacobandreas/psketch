@@ -37,7 +37,7 @@ class ModularACModel(object):
     def __init__(self, config):
         self.experiences = []
         self.world = None
-        tf.set_random_seed(0)
+        tf.set_random_seed(config.model.seed)
         self.next_actor_seed = 0
         self.config = config
 
