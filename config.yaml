@@ -1,4 +1,4 @@
-name: light_indep__3
+name: light_indep__4
 recipes: "resources/light/recipes.yaml"
 world: 
   name: LightWorld
@@ -7,7 +7,7 @@ model:
   use_args: false
   max_subtask_timesteps: 100
   baseline: state
-  seed: 3
+  seed: 4
 trainer: 
   name: CurriculumTrainer
   use_curriculum: true
