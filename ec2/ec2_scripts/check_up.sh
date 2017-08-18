@@ -11,6 +11,6 @@ for ip in $(aws ec2 describe-instances --query 'Reservations[*].Instances[*].Pub
   #echo "Logging in to $ip"
 	#mkdir $storage/$ip
   #scp -C -i YOUR_KEY -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$ip:ec2_results* $storage/$ip/.
-  ssh -i ../jda.pem -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$ip
+  ssh -i /Users/jda/Code/jda.pem -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@$ip
 done
 
