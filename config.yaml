@@ -1,4 +1,4 @@
-name: light_unsup_unordered__3
+name: light_unsup_unordered__4
 recipes: "resources/light/recipes.yaml"
 world: 
   name: LightWorld
@@ -8,7 +8,7 @@ model:
   use_args: false
   max_subtask_timesteps: 15
   baseline: state
-  seed: 3
+  seed: 4
 trainer: 
   name: CurriculumTrainer
   use_curriculum: true
